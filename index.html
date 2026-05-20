@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Atlas — Daily OS</title>
+<meta name="theme-color" content="#16130E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daily OS">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#16130E;--bg2:#1E1A13;--ink:#F3ECDD;--muted:#A89E8B;--faint:#6E6553;
+    --line:rgba(243,236,221,.10);--card:#211C15;--card2:#272018;
+    --body:#F0A35E;--mind:#52B7AC;--spirit:#A78BFA;--family:#F0726A;--money:#8FC56B;--rest:#8893A6;
+    --gold:#E9B872;--radius:16px;--shadow:0 1px 0 rgba(255,255,255,.03) inset,0 10px 30px -12px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(900px 500px at 78% -8%,rgba(233,184,114,.10),transparent 60%),
+      radial-gradient(700px 500px at 0% 0%,rgba(82,183,172,.06),transparent 55%),var(--bg);
+    color:var(--ink);font-family:"Hanken Grotesk",system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+    line-height:1.45;min-height:100vh;padding-top:env(safe-area-inset-top);
+  }
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");}
+  .wrap{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:26px 18px 90px}
+
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:6px}
+  .brand .eyebrow{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  .brand h1{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(30px,6vw,46px);line-height:1.02;margin:6px 0 2px;letter-spacing:-.01em}
+  .brand h1 em{font-style:italic;color:var(--gold)}
+  .brand .sub{color:var(--muted);font-size:14px}
+  .brand .sub b{color:var(--ink);font-weight:600}
+  .ringbox{display:flex;align-items:center;gap:14px}
+  .clock{text-align:right}
+  .clock .t{font-family:"Fraunces",serif;font-size:26px;font-weight:500;letter-spacing:.02em}
+  .clock .d{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+  .ring{position:relative;width:74px;height:74px;flex:none}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .pct{position:absolute;inset:0;display:grid;place-items:center;font-family:"Fraunces",serif;font-size:18px;font-weight:600}
+
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:18px 0 14px}
+  .seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px}
+  .seg button{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;font-weight:600;padding:7px 14px;border-radius:999px;cursor:pointer;transition:.18s}
+  .seg button.on{background:var(--gold);color:#2a210f}
+  .lowfuel{margin-left:auto;display:inline-flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:.18s;user-select:none}
+  .lowfuel .dot{width:9px;height:9px;border-radius:50%;background:var(--faint);transition:.18s}
+  .lowfuel.on{color:#2a210f;background:var(--spirit);border-color:transparent}
+  .lowfuel.on .dot{background:#2a210f}
+
+  .legend{display:flex;gap:8px 14px;flex-wrap:wrap;margin:4px 0 22px;font-size:12px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+
+  .panel{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:18px;box-shadow:var(--shadow)}
+  .panel h2{font-family:"Fraunces",serif;font-weight:600;font-size:18px;margin:0 0 4px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+  .panel .lead{color:var(--muted);font-size:13px;margin:0 0 14px}
+
+  .mvd ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+  .mvd li{display:flex;align-items:flex-start;gap:12px;padding:11px 13px;background:rgba(167,139,250,.07);border:1px solid rgba(167,139,250,.18);border-radius:12px;cursor:pointer;transition:.16s}
+  .mvd li:hover{background:rgba(167,139,250,.12)}
+  .mvd li.done{opacity:.5}.mvd li.done .mt{text-decoration:line-through}
+  .chk{flex:none;width:22px;height:22px;border-radius:7px;border:2px solid var(--spirit);display:grid;place-items:center;margin-top:1px;transition:.16s}
+  .chk svg{width:12px;height:12px;opacity:0;transform:scale(.4);transition:.16s}
+  .done .chk{background:var(--spirit)}.done .chk svg{opacity:1;transform:scale(1)}
+  .mt{font-weight:600;font-size:14.5px}.ms{display:block;color:var(--muted);font-size:12.5px;font-weight:400;margin-top:1px}
+
+  #timeline{transition:.25s}
+  .dimmed #timeline,.dimmed #taskpanel{opacity:.28;filter:saturate(.5)}
+  .block{position:relative;display:flex;gap:14px;padding:13px 15px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--pc,var(--rest));border-radius:13px;margin-bottom:10px;transition:.18s;cursor:pointer}
+  .block:hover{transform:translateX(2px);border-color:rgba(243,236,221,.2)}
+  .block.now{background:linear-gradient(90deg,rgba(233,184,114,.16),var(--card) 65%);border-color:rgba(233,184,114,.5);box-shadow:0 0 0 1px rgba(233,184,114,.3),0 14px 34px -16px rgba(233,184,114,.5)}
+  .block.now::after{content:"NOW";position:absolute;top:11px;right:13px;font-size:10px;font-weight:700;letter-spacing:.18em;color:#2a210f;background:var(--gold);padding:3px 8px;border-radius:999px;animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+  .block.past{opacity:.46}
+  .block .time{flex:none;width:92px;text-align:right;font-variant-numeric:tabular-nums}
+  .block .time .s{font-family:"Fraunces",serif;font-size:15px;font-weight:600;display:block}
+  .block .time .e{font-size:11px;color:var(--faint)}
+  .block .body{flex:1;min-width:0}
+  .block .body .ttl{font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .pill{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:2px 7px;border-radius:999px;color:#15120c}
+  .star{color:var(--gold);font-size:13px}
+  .block .anchor{color:var(--muted);font-size:13px;margin-top:3px}
+  .block .anchor b{color:var(--ink);font-weight:600}
+  .bchk{flex:none;width:24px;height:24px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;align-self:center;transition:.16s}
+  .bchk svg{width:13px;height:13px;opacity:0;transform:scale(.4);transition:.16s}
+  .block.checked .bchk{background:var(--money);border-color:var(--money)}.block.checked .bchk svg{opacity:1;transform:scale(1)}
+  .block.checked .ttl{text-decoration:line-through;text-decoration-color:var(--faint)}.block.checked{opacity:.62}
+
+  /* TASKS */
+  .addrow{display:flex;gap:9px;margin-bottom:13px}
+  .addrow input{flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;color:var(--ink);font:inherit;font-size:14px}
+  .addrow input:focus{outline:none;border-color:var(--gold);background:#241e16}
+  .addrow input::placeholder{color:var(--faint)}
+  .addrow button{flex:none;background:var(--gold);color:#2a210f;border:0;border-radius:11px;padding:0 18px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;transition:.16s}
+  .addrow button:active{transform:scale(.96)}
+  #tasklist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+  #tasklist li{display:flex;align-items:center;gap:11px;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:11px;transition:.16s}
+  #tasklist li.done{opacity:.5}#tasklist li.done .tx{text-decoration:line-through}
+  #tasklist .tbox{flex:none;width:21px;height:21px;border-radius:6px;border:2px solid var(--line);display:grid;place-items:center;cursor:pointer;transition:.16s}
+  #tasklist .tbox svg{width:12px;height:12px;opacity:0;transition:.16s}
+  #tasklist li.done .tbox{background:var(--money);border-color:var(--money)}#tasklist li.done .tbox svg{opacity:1}
+  #tasklist .tx{flex:1;font-size:14px}
+  #tasklist .del{flex:none;background:none;border:0;color:var(--faint);font-size:18px;cursor:pointer;padding:0 4px;line-height:1}
+  #tasklist .del:hover{color:var(--family)}
+  .empty{color:var(--faint);font-size:13px;font-style:italic;padding:4px 2px}
+
+  .top3 .row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .top3 .num{font-family:"Fraunces",serif;font-size:20px;font-weight:600;color:var(--gold);width:22px;flex:none;text-align:center}
+  .top3 input{flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;color:var(--ink);font:inherit;font-size:14px;transition:.16s}
+  .top3 input:focus{outline:none;border-color:var(--gold);background:#241e16}
+  .top3 input::placeholder{color:var(--faint)}
+
+  /* INSIGHTS */
+  .stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .stat{flex:1;min-width:120px;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+  .stat .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  .stat .v{font-family:"Fraunces",serif;font-size:26px;font-weight:600;margin-top:3px}
+  .stat .v small{font-size:14px;color:var(--muted)}
+  .bars7{display:flex;align-items:flex-end;gap:6px;height:64px;margin:6px 0 4px}
+  .bars7 .b{flex:1;background:linear-gradient(180deg,var(--gold),rgba(233,184,114,.35));border-radius:5px 5px 0 0;min-height:4px;position:relative;transition:.3s}
+  .bars7 .b span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:9px;color:var(--faint)}
+  .pbars{display:grid;gap:7px;margin-top:6px}
+  .pbar{display:flex;align-items:center;gap:9px;font-size:12px}
+  .pbar .nm{width:58px;color:var(--muted)}
+  .pbar .tr{flex:1;height:8px;background:var(--bg2);border-radius:5px;overflow:hidden}
+  .pbar .fl{height:100%;border-radius:5px;transition:.4s}
+  .pbar .ct{width:22px;text-align:right;color:var(--faint);font-variant-numeric:tabular-nums}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--gold);color:#2a210f;border:0;border-radius:12px;padding:13px 20px;font:inherit;font-weight:700;font-size:14.5px;cursor:pointer;transition:.16s;width:100%}
+  .btn:active{transform:scale(.985)}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+
+  /* REVIEW MODAL */
+  .scrim{position:fixed;inset:0;background:rgba(8,6,3,.72);backdrop-filter:blur(6px);z-index:50;display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:30px 16px}
+  .scrim.show{display:flex}
+  .review{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid rgba(233,184,114,.25);border-radius:20px;max-width:520px;width:100%;padding:24px;box-shadow:0 30px 80px -20px #000;animation:rise .35s cubic-bezier(.2,.8,.2,1)}
+  @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+  .review .eyebrow{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  .review h3{font-family:"Fraunces",serif;font-size:24px;font-weight:600;margin:6px 0 14px}
+  .insight{background:rgba(233,184,114,.08);border:1px solid rgba(233,184,114,.2);border-radius:13px;padding:15px;font-size:14.5px;line-height:1.55;margin-bottom:16px}
+  .insight p{margin:0 0 8px}.insight p:last-child{margin:0}
+  .insight b{color:var(--gold)}
+  .scoreline{display:flex;gap:10px;margin-bottom:16px}
+  .scoreline .s{flex:1;text-align:center;background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:12px 6px}
+  .scoreline .s .n{font-family:"Fraunces",serif;font-size:24px;font-weight:600}
+  .scoreline .s .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-top:2px}
+  .tmrw label{font-size:12px;color:var(--muted);display:block;margin-bottom:8px;font-weight:600}
+  .tmrw input{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--ink);font:inherit;font-size:13.5px;margin-bottom:8px}
+  .tmrw input:focus{outline:none;border-color:var(--gold)}
+
+  .footnote{color:var(--faint);font-size:12px;text-align:center;margin-top:26px;line-height:1.6}
+  .footnote b{color:var(--muted)}
+  a.reset{color:var(--faint);text-decoration:none;border-bottom:1px dashed var(--faint);cursor:pointer}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--money);color:#10210a;font-weight:700;font-size:13.5px;padding:11px 18px;border-radius:999px;z-index:60;opacity:0;transition:.3s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="eyebrow">Atlas · Daily OS</div>
+      <h1>Today, <em>handled.</em></h1>
+      <div class="sub" id="greeting">One block at a time.</div>
+    </div>
+    <div class="ringbox">
+      <div class="clock"><div class="t" id="clock">--:--</div><div class="d" id="date">—</div></div>
+      <div class="ring">
+        <svg width="74" height="74" viewBox="0 0 74 74">
+          <circle cx="37" cy="37" r="32" fill="none" stroke="rgba(243,236,221,.10)" stroke-width="6"/>
+          <circle id="ringfill" cx="37" cy="37" r="32" fill="none" stroke="var(--gold)" stroke-width="6" stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="201"/>
+        </svg>
+        <div class="pct" id="ringpct">0%</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="seg" id="modeseg">
+      <button data-mode="weekday">Weekday</button>
+      <button data-mode="weekend">Weekend</button>
+    </div>
+    <div class="lowfuel" id="lowfuel" title="Bad day? Tap this — the full plan dims and only your 5 non-negotiables stay lit.">
+      <span class="dot"></span> Low-fuel day
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><i style="background:var(--body)"></i>Body</span>
+    <span><i style="background:var(--mind)"></i>Mind</span>
+    <span><i style="background:var(--spirit)"></i>Spirit</span>
+    <span><i style="background:var(--family)"></i>Family</span>
+    <span><i style="background:var(--money)"></i>Money</span>
+    <span><i style="background:var(--rest)"></i>Rest</span>
+  </div>
+
+  <div class="panel mvd">
+    <h2>The Floor — Minimum Viable Day ⭐</h2>
+    <p class="lead">On a hard day you owe the world these five — not fourteen blocks. Hit them and the day counts. No shame, no spiral.</p>
+    <ul id="mvdlist"></ul>
+  </div>
+
+  <div class="panel" id="taskpanel">
+    <h2>Today's Focus</h2>
+    <p class="lead">The variable stuff — the specific things only today needs. Type them in; they save here and roll into your log tonight.</p>
+    <div class="addrow">
+      <input id="taskinput" placeholder="Add a task for today… (e.g. Call back A Tex lead)" maxlength="120">
+      <button id="taskadd">Add</button>
+    </div>
+    <ul id="tasklist"></ul>
+  </div>
+
+  <div class="panel" style="background:transparent;border:none;box-shadow:none;padding:0">
+    <h2 style="padding:0 2px">The Rhythm</h2>
+    <p class="lead" style="padding:0 2px">Color = pillar. ⭐ = part of your Floor. The glowing block is where you are right now — just do that one.</p>
+    <div id="timeline"></div>
+  </div>
+
+  <div class="panel top3">
+    <h2>Today's Top 3</h2>
+    <p class="lead">Your three big rocks. Set tonight for tomorrow during shutdown, so morning-you just executes.</p>
+    <div class="row"><span class="num">1</span><input id="t3a" placeholder="The one revenue lever that moves everything…"></div>
+    <div class="row"><span class="num">2</span><input id="t3b" placeholder="The thing you keep avoiding…"></div>
+    <div class="row"><span class="num">3</span><input id="t3c" placeholder="One thing for you or for Kenzie…"></div>
+  </div>
+
+  <div class="panel">
+    <h2>The Log — how it's actually going 📈</h2>
+    <p class="lead">Every closed day gets saved here. This is the proof, on the days it doesn't feel like progress.</p>
+    <div class="stats">
+      <div class="stat"><div class="k">Floor streak</div><div class="v" id="streakv">0<small> days</small></div></div>
+      <div class="stat"><div class="k">7-day avg</div><div class="v" id="avgv">—</div></div>
+      <div class="stat"><div class="k">Days logged</div><div class="v" id="loggedv">0</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--faint);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:6px">Last 7 days</div>
+    <div class="bars7" id="bars7"></div>
+    <div style="font-size:12px;color:var(--faint);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin:22px 0 4px">Pillar balance · last 7 days</div>
+    <div class="pbars" id="pbars"></div>
+    <div style="margin-top:18px"><button class="btn" id="closeout">Close out today &amp; review →</button></div>
+  </div>
+
+  <div class="footnote">
+    Built by Atlas for Alex. Rolls over to a fresh day each morning.<br>
+    <b>Missed a block? Don't rebuild the day. Just rejoin at the next one.</b><br>
+    <a class="reset" id="resetbtn">reset today</a>
+  </div>
+</div>
+
+<!-- REVIEW MODAL -->
+<div class="scrim" id="scrim">
+  <div class="review">
+    <div class="eyebrow" id="rev-eyebrow">Day Review</div>
+    <h3 id="rev-title">How today went</h3>
+    <div class="scoreline" id="rev-score"></div>
+    <div class="insight" id="rev-insight"></div>
+    <div class="tmrw">
+      <label>Set tomorrow's Top 3 — decide once, now:</label>
+      <input id="nt3a" placeholder="1 · Tomorrow's biggest lever…">
+      <input id="nt3b" placeholder="2 · …">
+      <input id="nt3c" placeholder="3 · …">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn ghost" id="rev-cancel" style="flex:1">Not yet</button>
+      <button class="btn" id="rev-lock" style="flex:2">Lock in &amp; rest 🌙</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ DATA ============ */
+const P={body:'--body',mind:'--mind',spirit:'--spirit',family:'--family',money:'--money',rest:'--rest'};
+const PN={body:'Body',mind:'Mind',spirit:'Spirit',family:'Family',money:'Money',rest:'Rest'};
+const PORDER=['body','mind','spirit','family','money','rest'];
+
+const weekday=[
+ {s:'05:45',e:'06:00',p:'body',star:1,t:'Wake & Prime',a:'Feet on floor → <b>big glass of water + sunlight, no phone</b>. Win the first 5 minutes.'},
+ {s:'06:00',e:'06:20',p:'spirit',star:1,t:'Stillness',a:'After water → <b>10 min meditation / breathwork</b> (or drums). Regulate before you activate.'},
+ {s:'06:20',e:'07:10',p:'family',t:'Kenzie — Morning',a:'Breakfast, get her ready. Be <b>present</b>. Phone stays down.'},
+ {s:'07:10',e:'07:50',p:'rest',t:'School Run',a:'Transition window. Audio learning or quiet. Don\'t check email at the light.'},
+ {s:'08:00',e:'09:00',p:'body',star:1,t:'Train',a:'After drop-off → <b>gym</b>. Move the body first; the mind follows.'},
+ {s:'09:00',e:'09:30',p:'rest',t:'Reset & Set Top 3',a:'Shower, protein. <b>Confirm today\'s 3.</b> Open the board.'},
+ {s:'09:30',e:'10:30',p:'money',t:'Markets',a:'NY session: <b>A+ setups only</b>, journal every trade. No revenge, no vibes.'},
+ {s:'10:30',e:'12:30',p:'mind',star:1,t:'Deep Work I — Revenue Engine',a:'<b>Phone in another room.</b> One task: the fast-cash lever (Alamo Credit-to-Close / client builds).'},
+ {s:'12:30',e:'13:15',p:'body',t:'Fuel & Walk',a:'Real food. 10-min walk, <b>no screen</b>. Reset the dopamine baseline.'},
+ {s:'13:15',e:'15:00',p:'mind',t:'Deep Work II — Build',a:'Single focus: client builds (A Tex / Hitch) or Clean Path OS. One thing, finished.'},
+ {s:'15:00',e:'15:30',p:'rest',t:'Admin Batch',a:'<b>All</b> email / DMs / follow-ups in one window. Then close the tab.'},
+ {s:'15:30',e:'16:00',p:'money',t:'Money Check (Fri)',a:'Friday: 15–30 min on the <b>numbers</b>. Other days: catch-up buffer.'},
+ {s:'16:00',e:'18:00',p:'family',star:1,t:'Kenzie Time',a:'Pickup, homework, her world. <b>This is the whole point.</b> Phone away.'},
+ {s:'18:00',e:'19:00',p:'family',t:'Dinner Together',a:'Eat as a family. No phones at the table.'},
+ {s:'19:00',e:'20:00',p:'mind',t:'Learning / Flex',a:'Read, course, or skill (20–40 min). Out of gas? It becomes rest. <b>No guilt.</b>'},
+ {s:'20:00',e:'20:45',p:'family',t:'Kenzie Wind-Down',a:'Slow down together — talk, read, connect.'},
+ {s:'20:45',e:'21:15',p:'spirit',t:'Quiet / Shadow Work',a:'<b>Journal 5 min.</b> Reflection / shadow work. Turn the day into meaning.'},
+ {s:'21:15',e:'21:40',p:'rest',star:1,t:'Shutdown',a:'<b>Set tomorrow\'s Top 3.</b> Tidy one surface. Lay tomorrow out.'},
+ {s:'21:40',e:'22:00',p:'rest',t:'Power Down',a:'Screens off. Dim the lights. Let the nervous system land.'},
+ {s:'22:00',e:'23:59',p:'body',star:1,t:'Sleep',a:'~7.75 hrs. <b>Sleep is the performance drug.</b> Protect it like money.'},
+];
+const weekend=[
+ {s:'07:00',e:'07:20',p:'body',star:1,t:'Wake & Prime',a:'Water + sunlight, no phone. Easy start, same anchor.'},
+ {s:'07:20',e:'07:45',p:'spirit',star:1,t:'Stillness',a:'Meditation / breath / drums. Longer if it feels good.'},
+ {s:'07:45',e:'08:45',p:'body',star:1,t:'Move',a:'Longer or funner session — or get active <b>with Kenzie</b>.'},
+ {s:'08:45',e:'09:30',p:'family',t:'Slow Breakfast',a:'No rush. Cook something together.'},
+ {s:'09:30',e:'11:30',p:'family',star:1,t:'Kenzie Adventure',a:'Get out. Park, project, build something. <b>Make a memory.</b>'},
+ {s:'11:30',e:'13:00',p:'mind',t:'Flex Build (optional)',a:'Only if energy\'s there: one capped, meaningful push.'},
+ {s:'13:00',e:'14:00',p:'body',t:'Lunch & Reset',a:'Fuel up. Step outside.'},
+ {s:'14:00',e:'16:30',p:'family',t:'Family / Free Time',a:'Unstructured on purpose. Let the week unwind.'},
+ {s:'16:30',e:'17:30',p:'mind',t:'Curiosity Hour',a:'Read, explore, NotebookLM — feed the mind something that isn\'t work.'},
+ {s:'17:30',e:'18:00',p:'rest',t:'Weekly Review (Sun)',a:'Sunday: <b>review the week, set next week\'s 3 big rocks.</b>'},
+ {s:'18:00',e:'19:30',p:'family',t:'Dinner & Downtime',a:'Family meal, slow evening.'},
+ {s:'19:30',e:'20:30',p:'family',t:'Connection / Play',a:'Game, movie, talk. Be in it.'},
+ {s:'20:30',e:'21:00',p:'spirit',t:'Quiet / Journal',a:'Reflect. Shadow work. Name three real gratitudes.'},
+ {s:'21:30',e:'23:59',p:'body',star:1,t:'Wind Down → Sleep',a:'Screens off. Protect the reset.'},
+];
+const MVD=[
+ {t:'10-min stillness',s:'Meditation or breathwork. Regulate the system.'},
+ {t:'Move the body',s:'Even 20 minutes counts. Motion changes the brain.'},
+ {t:'One deep-work block',s:'The #1 revenue lever. One thing, undistracted.'},
+ {t:'Kenzie connection',s:'Intentional, phone away. The reason behind all of it.'},
+ {t:'Evening shutdown',s:'Set tomorrow\'s Top 3. Close the loop.'},
+];
+
+/* ============ STORAGE ============ */
+const KEY='atlas_os_v1';
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+let state=load();
+if(!state.history)state.history={};
+
+const pad=n=>String(n).padStart(2,'0');
+const toMin=h=>{const[a,b]=h.split(':').map(Number);return a*60+b;};
+const fmt12=h=>{let[H,m]=h.split(':').map(Number);const ap=H>=12?'pm':'am';H=H%12||12;return H+(m?':'+pad(m):'')+ap;};
+const dkey=d=>{d=d||new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());};
+const liveMode=()=>{const d=new Date().getDay();return(d===0||d===6)?'weekend':'weekday';};
+const listFor=m=>m==='weekday'?weekday:weekend;
+
+function freshDay(date,mode){return{date,mode,checks:{},mvd:{},tasks:[],top3:{a:'',b:'',c:''},closed:false};}
+
+/* roll over: archive prior current day if it's not today */
+function ensureToday(){
+  const today=dkey();
+  if(!state.current){state.current=freshDay(today,liveMode());}
+  else if(state.current.date!==today){
+    const rec=buildRecord(state.current);
+    if(rec.activity) state.history[state.current.date]=rec;
+    const carry=state.current.nextTop3||{a:'',b:'',c:''};
+    state.current=freshDay(today,liveMode());
+    state.current.top3=carry;
+  }
+  save();
+}
+let cur; // shortcut
+
+function buildRecord(c){
+  const list=listFor(c.mode);
+  let done=0;list.forEach((b,i)=>{if(c.checks[i])done++;});
+  const total=list.length;
+  const pillars={};PORDER.forEach(p=>pillars[p]=0);
+  list.forEach((b,i)=>{if(c.checks[i])pillars[b.p]++;});
+  let mvd=0;for(let i=0;i<MVD.length;i++)if(c.mvd[i])mvd++;
+  const tt=(c.tasks||[]).length, td=(c.tasks||[]).filter(x=>x.done).length;
+  const pct=total?Math.round(done/total*100):0;
+  const activity=done>0||mvd>0||tt>0||(c.top3&&(c.top3.a||c.top3.b||c.top3.c));
+  const rec={date:c.date,mode:c.mode,done,total,pct,pillars,mvd,tasksDone:td,tasksTotal:tt,top3:c.top3,activity:!!activity};
+  rec.insight=genInsight(rec);
+  return rec;
+}
+
+function computeStreak(){
+  // count consecutive days back from yesterday with mvd>=3
+  let n=0;const d=new Date();
+  for(let i=1;i<=400;i++){
+    d.setDate(d.getDate()- (i===1?1:1));
+    const r=state.history[dkey(d)];
+    if(r&&r.mvd>=3)n++;else break;
+  }
+  // include today if today already qualifies (live)
+  const liveMvd=Object.values(cur.mvd).filter(Boolean).length;
+  if(liveMvd>=3)n++;
+  return n;
+}
+
+function genInsight(rec){
+  const out=[];
+  if(rec.mvd>=5)out.push('<b>Full Floor — 5/5.</b> That\'s a complete day, no asterisks. Bank it.');
+  else if(rec.mvd>=3)out.push('<b>Floor held ('+rec.mvd+'/5).</b> Solid day. You stayed on the field.');
+  else out.push('<b>Floor at '+rec.mvd+'/5.</b> Rough one — and that\'s data, not failure. Tomorrow: just the five.');
+  // pillar note
+  const zero=PORDER.filter(p=>['family','spirit','body'].includes(p)&&rec.pillars[p]===0);
+  if(zero.length){const nm=zero.map(p=>PN[p]).join(' & ');out.push(nm+' got <b>0 blocks</b> today — protect that tomorrow.');}
+  else{let best='body',bv=-1;PORDER.forEach(p=>{if(rec.pillars[p]>bv){bv=rec.pillars[p];best=p;}});out.push('Strongest pillar today: <b>'+PN[best]+'</b>. Nice balance.');}
+  if(rec.tasksTotal)out.push('Focus tasks: <b>'+rec.tasksDone+'/'+rec.tasksTotal+'</b> cleared.');
+  return out.map(x=>'<p>'+x+'</p>').join('');
+}
+
+/* ============ RENDER ============ */
+let MODE;
+function renderTimeline(){
+  const tl=document.getElementById('timeline');const list=listFor(MODE);tl.innerHTML='';
+  list.forEach((b,i)=>{
+    const el=document.createElement('div');
+    el.className='block'+(cur.checks[i]?' checked':'');
+    el.style.setProperty('--pc','var('+P[b.p]+')');
+    el.innerHTML='<div class="time"><span class="s">'+fmt12(b.s)+'</span><span class="e">'+fmt12(b.e)+'</span></div>'+
+      '<div class="body"><div class="ttl">'+(b.star?'<span class="star">⭐</span>':'')+b.t+
+      ' <span class="pill" style="background:var('+P[b.p]+')">'+PN[b.p]+'</span></div><div class="anchor">'+b.a+'</div></div>'+
+      '<div class="bchk"><svg viewBox="0 0 24 24" fill="none" stroke="#15120c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>';
+    el.onclick=()=>{cur.checks[i]=!cur.checks[i];save();renderTimeline();updateProgress();renderLog();};
+    tl.appendChild(el);
+  });
+  markNow();
+}
+function renderMVD(){
+  const ul=document.getElementById('mvdlist');ul.innerHTML='';
+  MVD.forEach((m,i)=>{
+    const li=document.createElement('li');li.className=cur.mvd[i]?'done':'';
+    li.innerHTML='<span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15120c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>'+
+      '<span><span class="mt">'+m.t+'</span><span class="ms">'+m.s+'</span></span>';
+    li.onclick=()=>{cur.mvd[i]=!cur.mvd[i];save();renderMVD();renderLog();};
+    ul.appendChild(li);
+  });
+}
+function renderTasks(){
+  const ul=document.getElementById('tasklist');ul.innerHTML='';
+  if(!cur.tasks.length){ul.innerHTML='<div class="empty">Nothing added yet. What does today actually need?</div>';return;}
+  cur.tasks.forEach(t=>{
+    const li=document.createElement('li');if(t.done)li.className='done';
+    li.innerHTML='<span class="tbox"><svg viewBox="0 0 24 24" fill="none" stroke="#15120c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>'+
+      '<span class="tx"></span><button class="del" title="delete">×</button>';
+    li.querySelector('.tx').textContent=t.text;
+    li.querySelector('.tbox').onclick=()=>{t.done=!t.done;save();renderTasks();renderLog();};
+    li.querySelector('.del').onclick=()=>{cur.tasks=cur.tasks.filter(x=>x.id!==t.id);save();renderTasks();renderLog();};
+    ul.appendChild(li);
+  });
+}
+function addTask(){
+  const inp=document.getElementById('taskinput');const v=inp.value.trim();if(!v)return;
+  cur.tasks.push({id:Date.now()+''+Math.random().toString(36).slice(2,6),text:v,done:false});
+  inp.value='';save();renderTasks();renderLog();
+}
+function markNow(){
+  const list=listFor(MODE);const now=new Date().getHours()*60+new Date().getMinutes();
+  const blocks=document.querySelectorAll('#timeline .block');let nowIdx=-1;
+  list.forEach((b,i)=>{if(now>=toMin(b.s)&&now<toMin(b.e))nowIdx=i;});
+  blocks.forEach((el,i)=>{el.classList.remove('now','past');
+    if(MODE===liveMode()){if(i===nowIdx)el.classList.add('now');else if(now>=toMin(list[i].e))el.classList.add('past');}});
+}
+function updateProgress(){
+  const list=listFor(MODE);let done=0;list.forEach((b,i)=>{if(cur.checks[i])done++;});
+  const pct=list.length?Math.round(done/list.length*100):0;
+  document.getElementById('ringpct').textContent=pct+'%';
+  document.getElementById('ringfill').style.strokeDashoffset=201-(201*pct/100);
+}
+function renderLog(){
+  // last 7 days incl today (live)
+  const days=[];const d=new Date();
+  for(let i=6;i>=0;i--){const dd=new Date();dd.setDate(d.getDate()-i);const k=dkey(dd);
+    let rec=state.history[k];
+    if(k===dkey()){rec=buildRecord(cur);}
+    days.push({k,dd,rec});
+  }
+  const bars=document.getElementById('bars7');bars.innerHTML='';
+  let sum=0,cnt=0;
+  days.forEach(o=>{const pct=o.rec?o.rec.pct:0;if(o.rec&&o.rec.activity){sum+=pct;cnt++;}
+    const b=document.createElement('div');b.className='b';b.style.height=Math.max(4,pct*.6)+'px';
+    b.title=o.k+' · '+pct+'%';
+    b.innerHTML='<span>'+'SMTWTFS'[o.dd.getDay()]+'</span>';
+    if(!o.rec||!o.rec.activity)b.style.background='var(--line)';
+    bars.appendChild(b);});
+  document.getElementById('avgv').textContent=cnt?Math.round(sum/cnt)+'%':'—';
+  document.getElementById('streakv').innerHTML=computeStreak()+'<small> days</small>';
+  document.getElementById('loggedv').textContent=Object.values(state.history).filter(r=>r.activity).length;
+  // pillar balance last 7 days
+  const tot={};PORDER.forEach(p=>tot[p]=0);let max=1;
+  days.forEach(o=>{if(o.rec)PORDER.forEach(p=>tot[p]+=(o.rec.pillars[p]||0));});
+  PORDER.forEach(p=>{if(tot[p]>max)max=tot[p];});
+  const pb=document.getElementById('pbars');pb.innerHTML='';
+  PORDER.forEach(p=>{const row=document.createElement('div');row.className='pbar';
+    row.innerHTML='<span class="nm">'+PN[p]+'</span><span class="tr"><span class="fl" style="width:'+(tot[p]/max*100)+'%;background:var('+P[p]+')"></span></span><span class="ct">'+tot[p]+'</span>';
+    pb.appendChild(row);});
+}
+
+/* ============ TOP3 ============ */
+function wireTop3(){
+  const map={t3a:'a',t3b:'b',t3c:'c'};
+  Object.keys(map).forEach(id=>{const el=document.getElementById(id);el.value=cur.top3[map[id]]||'';
+    el.oninput=()=>{cur.top3[map[id]]=el.value;save();};});
+}
+
+/* ============ REVIEW ============ */
+function openReview(){
+  const rec=buildRecord(cur);
+  document.getElementById('rev-score').innerHTML=
+    '<div class="s"><div class="n">'+rec.pct+'%</div><div class="l">Rhythm</div></div>'+
+    '<div class="s"><div class="n">'+rec.mvd+'/5</div><div class="l">Floor</div></div>'+
+    '<div class="s"><div class="n">'+rec.tasksDone+'/'+rec.tasksTotal+'</div><div class="l">Focus</div></div>';
+  document.getElementById('rev-insight').innerHTML=rec.insight;
+  const nt=state.current.nextTop3||{a:'',b:'',c:''};
+  nt3a.value=nt.a||'';nt3b.value=nt.b||'';nt3c.value=nt.c||'';
+  document.getElementById('scrim').classList.add('show');
+}
+function closeReview(){document.getElementById('scrim').classList.remove('show');}
+function lockIn(){
+  cur.nextTop3={a:nt3a.value,b:nt3b.value,c:nt3c.value};
+  cur.closed=true;save();closeReview();toast('Day locked in. Rest well, Alex. 🌙');renderLog();
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(window._t);window._t=setTimeout(()=>t.classList.remove('show'),2600);}
+
+/* ============ CLOCK ============ */
+function tick(){const d=new Date();let h=d.getHours(),m=d.getMinutes();const ap=h>=12?'PM':'AM';const h12=h%12||12;
+  document.getElementById('clock').textContent=h12+':'+pad(m)+' '+ap;
+  document.getElementById('date').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  markNow();}
+
+/* ============ WIRES ============ */
+document.getElementById('lowfuel').onclick=function(){this.classList.toggle('on');document.body.classList.toggle('dimmed',this.classList.contains('on'));};
+document.querySelectorAll('#modeseg button').forEach(btn=>{btn.onclick=()=>{
+  document.querySelectorAll('#modeseg button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  MODE=btn.dataset.mode;cur.mode=MODE;save();renderTimeline();updateProgress();renderLog();};});
+document.getElementById('taskadd').onclick=addTask;
+document.getElementById('taskinput').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
+document.getElementById('closeout').onclick=openReview;
+document.getElementById('rev-cancel').onclick=closeReview;
+document.getElementById('rev-lock').onclick=lockIn;
+document.getElementById('scrim').onclick=e=>{if(e.target.id==='scrim')closeReview();};
+document.getElementById('resetbtn').onclick=()=>{cur.checks={};cur.mvd={};save();renderTimeline();renderMVD();updateProgress();renderLog();toast('Today reset.');};
+
+/* ============ BOOT ============ */
+function boot(){
+  ensureToday();cur=state.current;MODE=cur.mode||liveMode();
+  document.querySelector('#modeseg button[data-mode="'+MODE+'"]').classList.add('on');
+  const hr=new Date().getHours();const g=hr<11?'Good morning':hr<17?'Good afternoon':'Good evening';
+  document.getElementById('greeting').innerHTML=g+', <b>Alex</b>. One block at a time.';
+  renderTimeline();renderMVD();renderTasks();wireTop3();renderLog();updateProgress();tick();
+  setInterval(tick,30000);
+}
+boot();
+</script>
+</body>
+</html>
