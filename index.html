@@ -166,6 +166,18 @@
   .upcoming-task .del:hover{color:var(--family)}
   .upcoming-empty{color:var(--faint);font-size:12.5px;font-style:italic;padding:8px 0 4px;text-align:center}
 
+  /* Notifications row (footnote area) — Mind-teal primary action, family-coral for danger */
+  .notifs{margin-top:14px;padding-top:14px;border-top:1px solid rgba(243,236,221,.06);font-size:12px;color:var(--faint);letter-spacing:.03em;line-height:1.7}
+  .notifs .nf-state{margin-right:8px}
+  .notifs .nf-state.on{color:var(--money);font-weight:600}
+  .notifs .nf-state.blocked{color:var(--family);font-weight:600}
+  .notifs a{color:var(--faint);text-decoration:none;border-bottom:1px dashed var(--faint);cursor:pointer;margin:0 4px;transition:.15s}
+  .notifs a:hover{color:var(--ink);border-bottom-color:var(--ink)}
+  .notifs a.primary{color:var(--mind);border-bottom-color:var(--mind)}
+  .notifs a.primary:hover{color:var(--ink);border-bottom-color:var(--mind)}
+  .notifs a.danger{color:var(--family);border-bottom-color:var(--family)}
+  .notifs a.danger:hover{color:var(--ink)}
+
   /* Floor-held / Perfect-day animated badge (in the header) */
   .floor-badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;padding:5px 11px;border-radius:999px;margin-top:9px;color:#2a210f;background:var(--gold);box-shadow:0 0 0 1px rgba(233,184,114,.35),0 6px 16px -8px rgba(233,184,114,.4);opacity:0;transform:translateY(-4px) scale(.85);transition:opacity .35s ease,transform .4s cubic-bezier(.2,.9,.3,1.2);pointer-events:none;align-self:flex-start}
   .floor-badge.show{opacity:1;transform:translateY(0) scale(1)}
@@ -436,6 +448,10 @@
     Built by Atlas for Alex. Rolls over to a fresh day each morning.<br>
     <b>Missed a block? Don't rebuild the day. Just rejoin at the next one.</b><br>
     <a class="reset" id="resetbtn">reset today</a>
+    <div class="notifs" id="notifs">
+      <span class="nf-state" id="nf-state">🔔 Notifications: checking…</span>
+      <span id="nf-actions"></span>
+    </div>
   </div>
 </div>
 
@@ -1490,6 +1506,7 @@ function renderAll(){
   var rb=document.querySelector('#ranges button[data-r="'+RANGE+'"]');if(rb)rb.classList.add('on');
   renderTimeline();renderMVD();renderTasks();wireTop3();renderLog();updateProgress();
   renderKenzieTile();renderSundayReview();renderJournal();renderUpcoming();
+  if(typeof renderNotifs === 'function') renderNotifs();
 }
 function boot(){
   ensureToday();cur=state.current;MODE=cur.mode||liveMode();
@@ -1500,6 +1517,45 @@ function boot(){
   renderAll();tick();setInterval(tick,30000);
 }
 boot();
+
+/* ============ WEB PUSH UI ============
+   Placeholder API + render-state function. Real subscribe/sendTest/disable
+   implementations are bolted on by the sync IIFE below once SB and sync.userId exist.
+*/
+window.atlasPush = {
+  status:    function(){ try{return localStorage.getItem('atlas_push_subscribed')==='1'?'subscribed':'not-subscribed';}catch(e){return 'unknown';} },
+  subscribe: async function(){ toast('Sync warming up — try in a few seconds.'); },
+  sendTest:  async function(){ toast('Sync warming up — try in a few seconds.'); },
+  disable:   async function(){ toast('Sync warming up — try in a few seconds.'); }
+};
+
+function renderNotifs(){
+  var st = document.getElementById('nf-state');
+  var act = document.getElementById('nf-actions');
+  if(!st || !act) return;
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)){
+    st.textContent = '🔔 Notifications not supported in this browser';
+    act.innerHTML = '';
+    return;
+  }
+  var perm = (typeof Notification !== 'undefined') ? Notification.permission : 'default';
+  if(perm === 'denied'){
+    st.innerHTML = '<span class="nf-state blocked">🔔 Blocked</span>';
+    act.innerHTML = '<span>Re-enable in your browser\'s site settings.</span>';
+    return;
+  }
+  var sub = window.atlasPush.status();
+  if(sub === 'subscribed'){
+    st.innerHTML = '<span class="nf-state on">🔔 Notifications ON · this device</span>';
+    act.innerHTML = '<a class="primary" id="nf-test">Send test</a> · <a class="danger" id="nf-disable">Disable</a>';
+    document.getElementById('nf-test').onclick    = function(){ window.atlasPush.sendTest();  };
+    document.getElementById('nf-disable').onclick = function(){ window.atlasPush.disable();   };
+  } else {
+    st.innerHTML = '<span class="nf-state">🔔 Notifications off</span>';
+    act.innerHTML = '<a class="primary" id="nf-sub">Enable notifications</a>';
+    document.getElementById('nf-sub').onclick = function(){ window.atlasPush.subscribe(); };
+  }
+}
 
 /* ============ SUPABASE SYNC ============
    atlas_os_v1 is NEVER mutated by this block (other than through the existing
@@ -1830,6 +1886,109 @@ boot();
       console.warn('[atlas-sync] boot failed; staying cache-only.', err);
     }
   }
+
+  /* ---- Web Push: bolt real implementations onto the window.atlasPush placeholder ---- */
+  var VAPID_PUBLIC = 'BAo_6citaaOGfWkdEG3YfLySs1mi_jHWIufeag0i4vurDG0jmJZmJoHsC4IHyqyeS_DDfTdfmygcRuKd11rdfTg';
+  function urlBase64ToUint8Array(base64String){
+    var padding = '='.repeat((4 - base64String.length % 4) % 4);
+    var base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    var raw     = atob(base64);
+    var out     = new Uint8Array(raw.length);
+    for(var i=0;i<raw.length;i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  function arrayBufferToB64Url(buf){
+    var bytes = new Uint8Array(buf);
+    var str = '';
+    for(var i=0;i<bytes.length;i++) str += String.fromCharCode(bytes[i]);
+    return btoa(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+
+  window.atlasPush.subscribe = async function(){
+    if(!sync.userId){ toast('Sign-in not ready. Try again in a moment.'); return; }
+    if(!('serviceWorker' in navigator) || !('PushManager' in window)){ toast('Push not supported here.'); return; }
+    try {
+      var perm = await Notification.requestPermission();
+      if(perm !== 'granted'){ toast('Permission not granted.'); renderNotifs(); return; }
+
+      var reg = await navigator.serviceWorker.ready;
+      var existing = await reg.pushManager.getSubscription();
+      var subscription = existing || await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
+      });
+
+      var p256dh = arrayBufferToB64Url(subscription.getKey('p256dh'));
+      var auth   = arrayBufferToB64Url(subscription.getKey('auth'));
+
+      var res = await SB.from('atlas_push_subscriptions').upsert({
+        user_id:    sync.userId,
+        endpoint:   subscription.endpoint,
+        p256dh:     p256dh,
+        auth:       auth,
+        user_agent: (navigator.userAgent || '').slice(0,300)
+      }, { onConflict: 'user_id,endpoint' });
+
+      if(res.error){ toast('Subscribe failed: ' + res.error.message); console.error('[atlas-push]', res.error); return; }
+
+      try { localStorage.setItem('atlas_push_subscribed', '1'); } catch(_){}
+      toast('Notifications enabled on this device. 🔔');
+      renderNotifs();
+    } catch(err){
+      console.error('[atlas-push] subscribe error', err);
+      toast('Subscribe failed: ' + (err && err.message ? err.message : err));
+    }
+  };
+
+  window.atlasPush.sendTest = async function(){
+    if(!sync.userId){ toast('Sign-in not ready.'); return; }
+    try {
+      var sess = await SB.auth.getSession();
+      var jwt = sess && sess.data && sess.data.session && sess.data.session.access_token;
+      if(!jwt){ toast('No auth token available.'); return; }
+      var res = await fetch(SB_URL + '/functions/v1/send-push', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + jwt,
+          'apikey':         SB_KEY,
+          'Content-Type':   'application/json'
+        },
+        body: JSON.stringify({
+          title: 'Atlas — Test push',
+          body:  'If you can read this, the stack works end-to-end. 🎉',
+          tag:   'atlas-test',
+          url:   'https://atlas-daily-planner.vercel.app'
+        })
+      });
+      var data = {};
+      try { data = await res.json(); } catch(_){}
+      if(!res.ok){ toast('Send failed: ' + (data.error || res.status)); return; }
+      toast('Sent · delivered to ' + (data.sent || 0) + ' device' + ((data.sent||0)===1?'':'s'));
+    } catch(err){
+      console.error('[atlas-push] sendTest error', err);
+      toast('Send failed: ' + (err && err.message ? err.message : err));
+    }
+  };
+
+  window.atlasPush.disable = async function(){
+    if(!sync.userId){ toast('Sign-in not ready.'); return; }
+    try {
+      var reg = await navigator.serviceWorker.ready;
+      var sub = await reg.pushManager.getSubscription();
+      if(sub){
+        var ep = sub.endpoint;
+        await sub.unsubscribe();
+        await SB.from('atlas_push_subscriptions').delete()
+          .eq('user_id', sync.userId).eq('endpoint', ep);
+      }
+      try { localStorage.removeItem('atlas_push_subscribed'); } catch(_){}
+      toast('Notifications disabled on this device.');
+      renderNotifs();
+    } catch(err){
+      console.error('[atlas-push] disable error', err);
+      toast('Disable failed: ' + (err && err.message ? err.message : err));
+    }
+  };
 
   // Kick off async — never blocks first paint.
   bootSync();

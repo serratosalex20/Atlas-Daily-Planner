@@ -26,3 +26,41 @@ self.addEventListener('fetch', (event) => {
   // Future versions may add offline-first caching for the shell HTML + supabase-js,
   // but for now we let the network handle everything (the app is < 100KB anyway).
 });
+
+/* ===== WEB PUSH ===== */
+// Fired when a push payload arrives from the send-push Edge Function (via the push
+// service: FCM on Android/desktop Chrome, APNs on iOS, Mozilla autopush on Firefox).
+self.addEventListener('push', (event) => {
+  let data = { title: 'Atlas', body: 'Time to check in.', tag: 'atlas-reminder', url: 'https://atlas-daily-planner.vercel.app' };
+  if (event.data) {
+    try { data = Object.assign(data, event.data.json()); }
+    catch (e) { data.body = event.data.text(); }
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      tag: data.tag,                       // dedupes back-to-back notifications with same tag
+      data: { url: data.url },
+      requireInteraction: false,
+    })
+  );
+});
+
+// When the user taps the notification: focus an existing tab if one is open,
+// otherwise open a new one. Same-origin URL only.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) {
+      if (c.url && c.url.indexOf(self.location.origin) === 0 && 'focus' in c) {
+        if ('navigate' in c) { try { await c.navigate(target); } catch (_) {} }
+        return c.focus();
+      }
+    }
+    return self.clients.openWindow(target);
+  })());
+});
