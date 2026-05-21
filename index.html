@@ -1206,7 +1206,14 @@ function openReview(){
     '<div class="s"><div class="n">'+rec.mvd+'/5</div><div class="l">Floor</div></div>'+
     '<div class="s"><div class="n">'+rec.tasksDone+'/'+rec.tasksTotal+'</div><div class="l">Focus</div></div>';
   document.getElementById('rev-insight').innerHTML=rec.insight;
+  // Pre-fill tomorrow's Top 3 from today's Top 3 as a default — most rocks carry forward.
+  // If you've already explicitly set nextTop3 (e.g. from an earlier closeout draft), honor that.
   var nt=state.current.nextTop3||{a:'',b:'',c:''};
+  var ntEmpty = !nt.a && !nt.b && !nt.c;
+  if(ntEmpty){
+    var t3=state.current.top3||{a:'',b:'',c:''};
+    nt={a:t3.a||'', b:t3.b||'', c:t3.c||''};
+  }
   document.getElementById('nt3a').value=nt.a||'';document.getElementById('nt3b').value=nt.b||'';document.getElementById('nt3c').value=nt.c||'';
   document.getElementById('scrim').classList.add('show');
 }
