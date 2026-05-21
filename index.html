@@ -87,6 +87,34 @@
   .kzpanel .kz-link:hover{border-color:var(--ink)}
   .kzpanel .kz-setup{color:var(--family);text-decoration:none;font-weight:600}
   .kzpanel .kz-setup:hover{text-decoration:underline}
+
+  /* Sunday Review — weekly reflection, Spirit-purple accent */
+  .sunday-review{background:linear-gradient(180deg,rgba(167,139,250,.06),var(--card));border-color:rgba(167,139,250,.22)}
+  .sunday-review h2 .sr-eye{color:var(--spirit)}
+  .sunday-review .sr-week{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:14px}
+  .sunday-review .sr-week b{color:var(--ink)}
+  .sunday-review .sr-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+  .sunday-review .sr-stat{background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:11px 8px;text-align:center;overflow:hidden}
+  .sunday-review .sr-stat .lbl{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:4px}
+  .sunday-review .sr-stat .val{font-family:"Fraunces",serif;font-size:17px;font-weight:600;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sunday-review .sr-stat .sub{font-size:11px;color:var(--muted);margin-top:2px}
+  .sunday-review .sr-narrative{font-size:14.5px;line-height:1.6;color:var(--ink);background:rgba(167,139,250,.06);border-left:3px solid var(--spirit);padding:13px 16px;border-radius:0 12px 12px 0;margin-bottom:6px}
+  .sunday-review .sr-narrative b{color:var(--spirit)}
+  .sunday-review .sr-label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:16px 0 8px}
+  .sunday-review textarea.sr-reflection{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;color:var(--ink);font:inherit;font-size:14px;line-height:1.5;min-height:64px;resize:vertical}
+  .sunday-review textarea.sr-reflection:focus{outline:none;border-color:var(--spirit);background:#241e16}
+  .sunday-review .sr-saved{font-size:10.5px;color:var(--spirit);font-weight:600;opacity:0;transition:.25s;margin-top:6px;text-align:right;letter-spacing:.08em;text-transform:uppercase}
+  .sunday-review .sr-saved.show{opacity:1}
+  .sunday-review .sr-carry{margin-top:16px;padding:12px 14px;background:var(--bg2);border:1px solid var(--line);border-radius:11px}
+  .sunday-review .sr-carry .lbl{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:8px}
+  .sunday-review .sr-carry .ci{display:flex;align-items:center;gap:8px;font-size:13.5px;margin-bottom:5px}
+  .sunday-review .sr-carry .ci .tx{flex:1;color:var(--ink)}
+  .sunday-review .sr-carry .ci button{appearance:none;border:1px solid var(--line);background:var(--bg2);color:var(--muted);font:inherit;font-size:11px;font-weight:600;padding:5px 9px;border-radius:7px;cursor:pointer;transition:.15s;letter-spacing:.05em;text-transform:uppercase}
+  .sunday-review .sr-carry .ci button:hover{color:var(--ink);border-color:rgba(243,236,221,.2)}
+  .sunday-review .sr-carry .ci button.cf{color:var(--spirit);border-color:rgba(167,139,250,.3)}
+  .sunday-review .sr-carry .ci button.cf:hover{background:rgba(167,139,250,.08)}
+  .sunday-review .sr-carry .ci button:disabled{opacity:.5;cursor:default}
+  .sunday-review.is-sunday .sr-week b{color:var(--spirit)}
   .block{position:relative;display:flex;gap:14px;padding:13px 15px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--pc,var(--rest));border-radius:13px;margin-bottom:10px;transition:.18s;cursor:pointer}
   .block:hover{transform:translateX(2px);border-color:rgba(243,236,221,.2)}
   .block.now{background:linear-gradient(90deg,rgba(233,184,114,.16),var(--card) 65%);border-color:rgba(233,184,114,.5);box-shadow:0 0 0 1px rgba(233,184,114,.3),0 14px 34px -16px rgba(233,184,114,.5)}
@@ -292,6 +320,21 @@
     </div>
   </div>
 
+  <!-- Sunday Review — weekly reflection. Always visible; eyebrow bolds on Sundays. -->
+  <div class="panel sunday-review" id="sunday-review">
+    <h2><span class="sr-eye">🌙</span> Sunday Review</h2>
+    <div class="sr-week" id="sr-week">Week of —</div>
+    <div class="sr-stats" id="sr-stats"></div>
+    <div class="sr-narrative" id="sr-narrative">—</div>
+    <div class="sr-label">One thing to protect next week</div>
+    <textarea class="sr-reflection" id="sr-reflection" placeholder="What's the one thing you want to defend? Half a sentence is enough." maxlength="400"></textarea>
+    <div class="sr-saved" id="sr-saved">Saved</div>
+    <div class="sr-carry" id="sr-carry" style="display:none">
+      <div class="lbl">Carry forward to next week</div>
+      <div id="sr-carry-items"></div>
+    </div>
+  </div>
+
   <div class="footnote">
     Built by Atlas for Alex. Rolls over to a fresh day each morning.<br>
     <b>Missed a block? Don't rebuild the day. Just rejoin at the next one.</b><br>
@@ -482,6 +525,218 @@ function renderKenzieTile(){
   focusEl.style.display='';
   promptEl.textContent=f.prompt;
   rowEl.style.display='';
+}
+
+/* ============ SUNDAY REVIEW (weekly reflection panel) ============
+   Always-visible panel at the bottom of Atlas. Reads from state.current + state.history,
+   computes ISO-week (Mon–Sun) aggregates, generates a coach-voice narrative paragraph.
+   Reflection text persists locally only (atlas_reflections_v1) — cross-device sync TBD.
+*/
+var REFLECT_KEY = 'atlas_reflections_v1';
+function srLoadReflections(){ try{return JSON.parse(localStorage.getItem(REFLECT_KEY))||{}}catch(e){return{}} }
+function srSaveReflections(r){ try{localStorage.setItem(REFLECT_KEY,JSON.stringify(r))}catch(e){} }
+
+// Monday of the current ISO week (Sun=0 maps to last week's Monday).
+function srMondayOf(d){
+  d = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  var dow = d.getDay() || 7;        // Sun=0 → 7
+  d.setDate(d.getDate() - (dow - 1));
+  return d;
+}
+function srWeekKey(d){
+  var t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  t.setDate(t.getDate() + 4 - (t.getDay() || 7));
+  var y0 = new Date(t.getFullYear(), 0, 1);
+  var wk = Math.ceil((((t - y0) / 86400000) + 1) / 7);
+  return t.getFullYear() + '-W' + pad(wk);
+}
+function srShortDow(d){ return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]; }
+function srShortMonth(d){ return d.toLocaleDateString('en-US',{month:'short'}); }
+
+function srCollectWeek(){
+  var mon = srMondayOf(new Date());
+  var today = new Date(); today.setHours(23,59,59,999);
+  var days = [];
+  for(var i=0;i<7;i++){
+    var d = new Date(mon); d.setDate(mon.getDate()+i);
+    var r = recFor(d);
+    days.push({ date:d, key:dkey(d), record:r, isFuture: d > today });
+  }
+  return { monday:mon, days:days };
+}
+
+function srStats(week){
+  var pillarTotals = {}; PORDER.forEach(function(p){pillarTotals[p]=0;});
+  var floorHeld=0, daysLogged=0, perfectDays=0;
+  var bestDay=null, bestPct=-1, hardestDay=null, hardestPct=101;
+  var familyDays=0;
+  week.days.forEach(function(d){
+    if(d.isFuture||!d.record||!d.record.activity) return;
+    daysLogged++;
+    if(d.record.mvd>=3) floorHeld++;
+    if(d.record.mvd>=5) perfectDays++;
+    PORDER.forEach(function(p){ pillarTotals[p] += (d.record.pillars[p]||0); });
+    if((d.record.pillars.family||0)>0) familyDays++;
+    if(d.record.pct > bestPct){ bestPct=d.record.pct; bestDay=d; }
+    if(d.record.pct < hardestPct){ hardestPct=d.record.pct; hardestDay=d; }
+  });
+  var strong=null, strongVal=-1, light=null, lightVal=Infinity;
+  PORDER.forEach(function(p){
+    if(pillarTotals[p]>strongVal){strongVal=pillarTotals[p]; strong=p;}
+    if(pillarTotals[p]<lightVal){lightVal=pillarTotals[p]; light=p;}
+  });
+  return { floorHeld:floorHeld, daysLogged:daysLogged, perfectDays:perfectDays,
+           bestDay:bestDay, hardestDay:hardestDay, familyDays:familyDays,
+           strong:strong, strongVal:strongVal, light:light, lightVal:lightVal,
+           pillarTotals:pillarTotals };
+}
+
+// Coach-in-your-corner voice. Pick the *one* most-true observation, lead with that.
+function srNarrative(week, st){
+  if(st.daysLogged === 0){
+    return 'No days logged this week yet. That\'s fine — the week is the unit, not the day. Hit one Floor item before bed and the week reopens.';
+  }
+  var sentences = [];
+  // 1. Family-every-day (Kenzie is the point — lead with this when true)
+  if(st.familyDays === st.daysLogged && st.daysLogged >= 5){
+    sentences.push('Your <b>Family</b> pillar landed every day this week. Kenzie got intentional time even on the heavier days — that counts more than the rhythm numbers say.');
+  }
+  // 2. Consistent week
+  else if(st.floorHeld >= 5 && st.daysLogged >= 5){
+    sentences.push('You held the Floor <b>'+st.floorHeld+' of '+st.daysLogged+'</b> days. The numbers below tell a story of consistency, not heroics. That\'s what compounds.');
+  }
+  // 3. Rough week
+  else if(st.daysLogged >= 4 && st.floorHeld <= 1){
+    sentences.push('Rough week. <b>'+st.floorHeld+' Floor '+(st.floorHeld===1?'day':'days')+'</b> out of '+st.daysLogged+' logged. That\'s data, not failure — write below what made it heavy. Next week the Floor is enough.');
+  }
+  // 4. High variance
+  else if(st.bestDay && st.hardestDay && (st.bestDay.record.pct - st.hardestDay.record.pct) > 50){
+    sentences.push('You had <b>range</b> this week — '+st.bestDay.record.pct+'% on '+srShortDow(st.bestDay.date)+' down to '+st.hardestDay.record.pct+'% on '+srShortDow(st.hardestDay.date)+'. Some weeks are like that. The shape matters more than any one day.');
+  }
+  // 5. Default — strongest pillar callout
+  if(!sentences.length){
+    sentences.push('Your strongest pillar this week was <b>'+PN[st.strong]+'</b> ('+st.strongVal+' blocks). The light side was <b>'+PN[st.light]+'</b>.');
+  }
+  // Gentle add-on if a critical pillar was zero
+  if(st.light && ['family','spirit','body'].indexOf(st.light)>=0 && st.lightVal === 0 && sentences.length === 1){
+    sentences.push(PN[st.light]+' got <b>0 blocks</b>. Protect a window for it next week — even ten minutes counts.');
+  }
+  return sentences.join(' ');
+}
+
+function srRenderStatGrid(week, st){
+  var box = document.getElementById('sr-stats');
+  function dayLabel(d, pct){
+    if(!d) return '—';
+    return srShortDow(d.date)+' '+pct+'%';
+  }
+  function daySub(d){
+    if(!d) return '—';
+    return srShortMonth(d.date)+' '+d.date.getDate();
+  }
+  var floorVal = st.daysLogged ? (st.floorHeld+'/'+st.daysLogged) : '—';
+  var strongLbl = st.strong && st.strongVal>0 ? PN[st.strong] : '—';
+  var lightLbl  = st.light  && st.daysLogged>0 ? PN[st.light]  : '—';
+  // Build with createElement chains to keep textContent (no innerHTML)
+  box.textContent = '';
+  function statCell(lbl, val, sub, valColor){
+    var c = document.createElement('div'); c.className='sr-stat';
+    var l = document.createElement('div'); l.className='lbl'; l.textContent=lbl;
+    var v = document.createElement('div'); v.className='val'; v.textContent=val;
+    if(valColor) v.style.color = 'var('+valColor+')';
+    var s = document.createElement('div'); s.className='sub'; s.textContent=sub;
+    c.appendChild(l); c.appendChild(v); c.appendChild(s);
+    return c;
+  }
+  box.appendChild(statCell('Floor', floorVal, st.daysLogged?'days held':'no data yet'));
+  box.appendChild(statCell('Strong', strongLbl, st.strong&&st.strongVal>0?(st.strongVal+' blocks'):'—', st.strong?P[st.strong]:null));
+  box.appendChild(statCell('Light', lightLbl, st.light&&st.daysLogged>0?(st.lightVal+' blocks'):'—', st.light?P[st.light]:null));
+  box.appendChild(statCell('Best', st.bestDay?dayLabel(st.bestDay, st.bestDay.record.pct):'—', daySub(st.bestDay)));
+  box.appendChild(statCell('Hardest', st.hardestDay?dayLabel(st.hardestDay, st.hardestDay.record.pct):'—', daySub(st.hardestDay)));
+}
+
+function srRenderCarry(week){
+  // Surface unique Top 3 strings seen across this week's days (today + history).
+  var carry = []; var seen = {};
+  week.days.forEach(function(d){
+    if(!d.record || !d.record.top3) return;
+    ['a','b','c'].forEach(function(k){
+      var t = (d.record.top3[k]||'').trim();
+      if(t && !seen[t]){ seen[t]=1; carry.push({ text:t, fromDay:d.date }); }
+    });
+  });
+  var wrap = document.getElementById('sr-carry');
+  var items = document.getElementById('sr-carry-items');
+  if(!carry.length){ wrap.style.display='none'; return; }
+  wrap.style.display=''; items.textContent='';
+  carry.slice(0,4).forEach(function(item){
+    var row = document.createElement('div'); row.className='ci';
+    var tx = document.createElement('span'); tx.className='tx'; tx.textContent=item.text;
+    var fb = document.createElement('button'); fb.className='cf'; fb.textContent='→ next week';
+    var sb = document.createElement('button'); sb.textContent='skip';
+    fb.onclick = function(){
+      var nt = cur.nextTop3 || { a:'', b:'', c:'' };
+      if(!nt.a) nt.a = item.text;
+      else if(!nt.b) nt.b = item.text;
+      else if(!nt.c) nt.c = item.text;
+      else { toast('Tomorrow\'s Top 3 is already full.'); return; }
+      cur.nextTop3 = nt; save();
+      row.style.opacity='0.45'; fb.disabled=true; sb.disabled=true; fb.textContent='✓ carried';
+      toast('Will appear in tomorrow\'s Top 3.');
+    };
+    sb.onclick = function(){
+      row.style.opacity='0.45'; fb.disabled=true; sb.disabled=true; sb.textContent='skipped';
+    };
+    row.appendChild(tx); row.appendChild(fb); row.appendChild(sb);
+    items.appendChild(row);
+  });
+}
+
+var _srReflectWired = false;
+function renderSundayReview(){
+  var panel = document.getElementById('sunday-review');
+  if(!panel) return;
+  var week = srCollectWeek();
+  var st = srStats(week);
+  // Bolder treatment on Sundays
+  panel.classList.toggle('is-sunday', new Date().getDay() === 0);
+  // Header
+  var monStr = srShortMonth(week.monday) + ' ' + week.monday.getDate();
+  var sun = new Date(week.monday); sun.setDate(week.monday.getDate()+6);
+  var sunStr = srShortMonth(sun) + ' ' + sun.getDate();
+  var hdr = document.getElementById('sr-week');
+  hdr.textContent = '';
+  hdr.appendChild(document.createTextNode('Week of '));
+  var b = document.createElement('b'); b.textContent = monStr+' – '+sunStr;
+  hdr.appendChild(b);
+  // Stats grid (uses textContent inside, no innerHTML)
+  srRenderStatGrid(week, st);
+  // Narrative — assigning HTML is safe here because srNarrative() outputs hard-coded templates with only <b> tags; no user input touches it.
+  document.getElementById('sr-narrative').innerHTML = srNarrative(week, st);
+  // Carry forward
+  srRenderCarry(week);
+  // Reflection text load
+  var refs = srLoadReflections();
+  var wk = srWeekKey(new Date());
+  var weekR = (refs.weekly||{})[wk];
+  var ta = document.getElementById('sr-reflection');
+  ta.value = (weekR && weekR.text) || '';
+  // Wire blur-save once
+  if(!_srReflectWired){
+    ta.onblur = function(){
+      var r = srLoadReflections(); r.weekly = r.weekly || {};
+      var k = srWeekKey(new Date());
+      var txt = ta.value.trim();
+      if(txt){ r.weekly[k] = { text:txt, updated_at:new Date().toISOString() }; }
+      else if(r.weekly[k]){ delete r.weekly[k]; }
+      srSaveReflections(r);
+      var s = document.getElementById('sr-saved');
+      s.classList.add('show');
+      clearTimeout(window._srt);
+      window._srt = setTimeout(function(){ s.classList.remove('show'); }, 1800);
+    };
+    _srReflectWired = true;
+  }
 }
 
 
@@ -675,6 +930,9 @@ function renderLog(){
   PORDER.forEach(function(p){var row=document.createElement('div');row.className='pbar';
     row.innerHTML='<span class="nm">'+PN[p]+'</span><span class="tr"><span class="fl" style="width:'+(pil[p]/max*100)+'%;background:var('+P[p]+')"></span></span><span class="ct">'+pil[p]+'</span>';
     pb.appendChild(row);});
+  // The Sunday Review's stats overlap renderLog's data — refresh both together so
+  // any toggle in The Floor, the timeline, or Tasks updates the weekly summary live.
+  if(typeof renderSundayReview === 'function') renderSundayReview();
 }
 
 /* ============ TOP3 ============ */
@@ -781,7 +1039,7 @@ function renderAll(){
   document.querySelector('#modeseg button[data-mode="'+MODE+'"]').classList.add('on');
   var rb=document.querySelector('#ranges button[data-r="'+RANGE+'"]');if(rb)rb.classList.add('on');
   renderTimeline();renderMVD();renderTasks();wireTop3();renderLog();updateProgress();
-  renderKenzieTile();
+  renderKenzieTile();renderSundayReview();
 }
 function boot(){
   ensureToday();cur=state.current;MODE=cur.mode||liveMode();
