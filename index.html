@@ -141,6 +141,25 @@
   .atlas-journal .entry .del{margin-left:auto;background:none;border:0;color:var(--faint);cursor:pointer;font-size:18px;line-height:1;padding:0 4px}
   .atlas-journal .entry .del:hover{color:var(--family)}
   .atlas-journal .empty{color:var(--faint);font-size:13px;font-style:italic;padding:6px 2px}
+
+  /* Floor-held / Perfect-day animated badge (in the header) */
+  .floor-badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;padding:5px 11px;border-radius:999px;margin-top:9px;color:#2a210f;background:var(--gold);box-shadow:0 0 0 1px rgba(233,184,114,.35),0 6px 16px -8px rgba(233,184,114,.4);opacity:0;transform:translateY(-4px) scale(.85);transition:opacity .35s ease,transform .4s cubic-bezier(.2,.9,.3,1.2);pointer-events:none;align-self:flex-start}
+  .floor-badge.show{opacity:1;transform:translateY(0) scale(1)}
+  .floor-badge.perfect{background:linear-gradient(95deg,#F0CC8E,#E9B872 50%,#F5D58E);animation:badgeTwinkle 2.6s ease-in-out infinite}
+  .floor-badge .star{font-size:12px;line-height:1}
+  @keyframes badgeTwinkle{
+    0%,100%{box-shadow:0 0 0 1px rgba(233,184,114,.35),0 6px 16px -8px rgba(233,184,114,.4)}
+    50%{box-shadow:0 0 0 1.5px rgba(233,184,114,.6),0 8px 22px -8px rgba(233,184,114,.7),0 0 24px rgba(233,184,114,.25)}
+  }
+
+  /* Confetti burst — pure CSS particles. Triggered on 5/5 Floor and on lock-in. */
+  .confetti-burst{position:fixed;inset:0;pointer-events:none;z-index:80;overflow:hidden}
+  .cf-particle{position:absolute;width:8px;height:14px;border-radius:2px;opacity:.95;transform-origin:center;will-change:transform,opacity;animation:cfBurst 1.5s cubic-bezier(.18,.7,.35,1) forwards}
+  @keyframes cfBurst{
+    0%{transform:translate(0,0) rotate(0deg) scale(.85);opacity:1}
+    18%{opacity:1}
+    100%{transform:translate(var(--dx),calc(var(--dy) + 260px)) rotate(var(--rot)) scale(1.05);opacity:0}
+  }
   .block{position:relative;display:flex;gap:14px;padding:13px 15px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--pc,var(--rest));border-radius:13px;margin-bottom:10px;transition:.18s;cursor:pointer}
   .block:hover{transform:translateX(2px);border-color:rgba(243,236,221,.2)}
   .block.now{background:linear-gradient(90deg,rgba(233,184,114,.16),var(--card) 65%);border-color:rgba(233,184,114,.5);box-shadow:0 0 0 1px rgba(233,184,114,.3),0 14px 34px -16px rgba(233,184,114,.5)}
@@ -245,6 +264,7 @@
       <div class="eyebrow">Atlas · Daily OS</div>
       <h1>Today, <em>handled.</em></h1>
       <div class="sub" id="greeting">One block at a time.</div>
+      <div class="floor-badge" id="floor-badge"></div>
     </div>
     <div class="ringbox">
       <div class="clock"><div class="t" id="clock">--:--</div><div class="d" id="date">—</div></div>
@@ -472,6 +492,67 @@ var MVD=[
  {t:'Kenzie connection',s:'Intentional, phone away. The reason behind all of it.'},
  {t:'Evening shutdown',s:'Set tomorrow\'s Top 3. Close the loop.'},
 ];
+
+/* ============ CELEBRATION HELPERS (badge + confetti) ============
+   Triggered on threshold moments only — never on every checkbox. The line that matters:
+   the dopamine hit should reward the *win*, not the micro-action.
+*/
+function countMvdDone(){
+  if(!window.cur || !cur.mvd) return 0;
+  var n=0; for(var i=0;i<MVD.length;i++){ if(cur.mvd[i]) n++; } return n;
+}
+
+function renderFloorBadge(){
+  var el = document.getElementById('floor-badge'); if(!el) return;
+  var n = countMvdDone();
+  if(n < 3){
+    el.classList.remove('show','perfect');
+    el.textContent = '';
+    return;
+  }
+  el.textContent = '';
+  if(n >= 5){
+    el.classList.add('show','perfect');
+    el.appendChild(document.createTextNode('Perfect day '));
+    var star = document.createElement('span'); star.className='star'; star.textContent='✦';
+    el.appendChild(star);
+  } else {
+    el.classList.add('show');
+    el.classList.remove('perfect');
+    el.textContent = 'Floor held · '+n+'/5';
+  }
+}
+
+// Pure-CSS confetti: 36 particles, randomized trajectories via custom properties.
+// Optional `origin` is a {x,y} viewport-coord anchor (e.g. center of the element you tapped).
+function triggerConfetti(origin){
+  var cx = origin ? origin.x : (window.innerWidth/2);
+  var cy = origin ? origin.y : (window.innerHeight/3);
+  var colors = ['#E9B872','#F0A35E','#F0726A','#A78BFA','#52B7AC','#8FC56B'];
+  var container = document.createElement('div');
+  container.className = 'confetti-burst';
+  document.body.appendChild(container);
+  var N = 36;
+  for(var i=0; i<N; i++){
+    var p = document.createElement('span');
+    p.className = 'cf-particle';
+    p.style.background = colors[i % colors.length];
+    p.style.left = cx + 'px';
+    p.style.top  = cy + 'px';
+    // Burst direction — even ring around the origin with light jitter, biased slightly upward.
+    var angle = (Math.PI * 2) * (i / N) + (Math.random() - 0.5) * 0.4;
+    var velocity = 110 + Math.random() * 110;
+    var dx = Math.cos(angle) * velocity;
+    var dy = Math.sin(angle) * velocity - 70;
+    var rot = (Math.random() * 720 - 360) + 'deg';
+    p.style.setProperty('--dx', dx + 'px');
+    p.style.setProperty('--dy', dy + 'px');
+    p.style.setProperty('--rot', rot);
+    p.style.animationDelay = (Math.random() * 70) + 'ms';
+    container.appendChild(p);
+  }
+  setTimeout(function(){ if(container.parentNode) container.parentNode.removeChild(container); }, 1900);
+}
 
 /* ============ KENZIE COMPASS (this week's focus tile) ============
    Reads Kenzie's birthday from the kenzie_compass_v1 cache that /kenzie.html writes,
@@ -1006,9 +1087,21 @@ function renderMVD(){
     var li=document.createElement('li');li.className=cur.mvd[i]?'done':'';
     li.innerHTML='<span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15120c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>'+
       '<span><span class="mt">'+m.t+'</span><span class="ms">'+m.s+'</span></span>';
-    li.onclick=function(){cur.mvd[i]=!cur.mvd[i];save();renderMVD();renderLog();};
+    li.onclick=(function(idx,liEl){return function(){
+      var before = countMvdDone();
+      cur.mvd[idx]=!cur.mvd[idx];
+      save(); renderMVD(); renderLog();
+      var after = countMvdDone();
+      // Celebrate ONLY the transition into 5/5 (perfect Floor). Not 4→3, not 4→5→4→5 spam.
+      if(before < 5 && after === 5){
+        var rect = liEl.getBoundingClientRect();
+        triggerConfetti({ x: rect.left + rect.width/2, y: rect.top + rect.height/2 });
+        toast('Full Floor — 5/5. Bank it. 🌟');
+      }
+    };})(i,li);
     ul.appendChild(li);
   });
+  renderFloorBadge();
 }
 function renderTasks(){
   var ul=document.getElementById('tasklist');ul.innerHTML='';
@@ -1121,6 +1214,8 @@ function closeReview(){document.getElementById('scrim').classList.remove('show')
 function lockIn(){
   cur.nextTop3={a:document.getElementById('nt3a').value,b:document.getElementById('nt3b').value,c:document.getElementById('nt3c').value};
   cur.closed=true;save();closeReview();toast('Day locked in. Rest well, Alex. 🌙');renderLog();
+  // Closeout celebration — the day's official punctuation.
+  triggerConfetti();
 }
 function openDay(d){
   var r=recFor(d);
