@@ -75,7 +75,18 @@
   .mt{font-weight:600;font-size:14.5px}.ms{display:block;color:var(--muted);font-size:12.5px;font-weight:400;margin-top:1px}
 
   #timeline{transition:.25s}
-  .dimmed #timeline,.dimmed #taskpanel{opacity:.28;filter:saturate(.5)}
+  .dimmed #timeline,.dimmed #taskpanel,.dimmed #kzpanel{opacity:.28;filter:saturate(.5)}
+
+  /* Kenzie Compass — this week's focus tile (sibling to /kenzie.html) */
+  .kzpanel{background:linear-gradient(135deg,rgba(240,114,106,.10),var(--card) 60%);border-color:rgba(240,114,106,.28);border-left:4px solid var(--pc,var(--family))}
+  .kzpanel .kz-eye{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--family);font-weight:600;margin-bottom:4px}
+  .kzpanel .kz-focus{font-family:"Fraunces",serif;font-size:18px;font-weight:600;letter-spacing:-.01em;color:var(--ink);margin:0 0 8px}
+  .kzpanel .kz-prompt{font-size:13.5px;line-height:1.5;color:var(--muted);background:var(--bg2);border-left:3px solid var(--pc,var(--family));padding:10px 13px;border-radius:0 10px 10px 0}
+  .kzpanel .kz-row{display:flex;justify-content:flex-end;margin-top:10px}
+  .kzpanel .kz-link{font-size:12px;color:var(--ink);text-decoration:none;letter-spacing:.06em;border-bottom:1px dashed var(--muted);padding-bottom:1px;transition:.15s}
+  .kzpanel .kz-link:hover{border-color:var(--ink)}
+  .kzpanel .kz-setup{color:var(--family);text-decoration:none;font-weight:600}
+  .kzpanel .kz-setup:hover{text-decoration:underline}
   .block{position:relative;display:flex;gap:14px;padding:13px 15px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--pc,var(--rest));border-radius:13px;margin-bottom:10px;transition:.18s;cursor:pointer}
   .block:hover{transform:translateX(2px);border-color:rgba(243,236,221,.2)}
   .block.now{background:linear-gradient(90deg,rgba(233,184,114,.16),var(--card) 65%);border-color:rgba(233,184,114,.5);box-shadow:0 0 0 1px rgba(233,184,114,.3),0 14px 34px -16px rgba(233,184,114,.5)}
@@ -216,6 +227,14 @@
     <h2>The Floor — Minimum Viable Day ⭐</h2>
     <p class="lead">On a hard day you owe the world these five — not fourteen blocks. Hit them and the day counts. No shame, no spiral.</p>
     <ul id="mvdlist"></ul>
+  </div>
+
+  <!-- Kenzie Compass — this week's focus tile. Links to /kenzie.html for the full view. -->
+  <div class="panel kzpanel" id="kzpanel">
+    <div class="kz-eye">🧭 This week with Kenzie</div>
+    <div class="kz-focus" id="kzfocus" style="display:none"></div>
+    <div class="kz-prompt" id="kzprompt"><a class="kz-setup" href="kenzie.html">Open Compass to anchor Kenzie's timeline →</a></div>
+    <div class="kz-row" id="kzrow" style="display:none"><a class="kz-link" href="kenzie.html" id="kzlink">Open Compass →</a></div>
   </div>
 
   <div class="panel" id="taskpanel">
@@ -366,6 +385,105 @@ var MVD=[
  {t:'Kenzie connection',s:'Intentional, phone away. The reason behind all of it.'},
  {t:'Evening shutdown',s:'Set tomorrow\'s Top 3. Close the loop.'},
 ];
+
+/* ============ KENZIE COMPASS (this week's focus tile) ============
+   Reads Kenzie's birthday from the kenzie_compass_v1 cache that /kenzie.html writes,
+   and refreshes from kenzie_settings inside the sync IIFE below. Drives a single tile
+   that sits between The Floor and Today's Focus.
+
+   Data is denormalized from kenzie.html on purpose: the Atlas tile only needs one
+   "headline" prompt per (age, focus area). The full per-week prompt rotation lives
+   in /kenzie.html. When you tweak a prompt here, mirror it in kenzie.html.
+*/
+var KZ_TILE=[
+  {age:12,focus:[
+    {name:'Emotional awareness',color:'--spirit',prompt:'Keep an "emotion vocabulary" list on the fridge — apprehensive, melancholy, elated, frustrated, overwhelmed, content.'},
+    {name:'Basic budgeting',    color:'--money', prompt:'Give her a weekly or monthly allowance and require her to divide it: Spend, Save, Give.'},
+    {name:'Household chores',   color:'--body',  prompt:'Assign her full responsibility for her own laundry.'},
+    {name:'Online safety',      color:'--mind',  prompt:'Review the privacy settings on every one of her apps together.'}
+  ]},
+  {age:13,focus:[
+    {name:'Self-regulation',    color:'--spirit',prompt:'Practice deep breathing together: inhale 4, hold 4, exhale 4.'},
+    {name:'Goal setting',       color:'--rest',  prompt:'Help her set one SMART goal in each area: academic, personal, health, social.'},
+    {name:'Cooking basics',     color:'--body',  prompt:'Master the starter recipe set: eggs, pasta, stir-fry, salad with homemade dressing, baked chicken or fish.'},
+    {name:'Healthy friendships',color:'--family',prompt:'When watching shows together, ask: "Is this a healthy relationship? Why or why not?"'}
+  ]},
+  {age:14,focus:[
+    {name:'Conflict resolution',color:'--family',prompt:'Role-play hard conversations — asking a teacher for help, addressing a friend conflict, saying no to peer pressure.'},
+    {name:'Credit concepts',    color:'--money', prompt:'Let her "borrow" money from you with a small interest charge and a repayment plan.'},
+    {name:'Time management',    color:'--body',  prompt:'Help her set up a weekly schedule with school, homework, chores, activities, and rest.'},
+    {name:'Self-advocacy',      color:'--family',prompt:'Practice phone calls for real tasks: ordering food, calling a doctor\'s office, following up on a package.'}
+  ]},
+  {age:15,focus:[
+    {name:'Career exploration', color:'--rest',  prompt:'Take the VIA Character Strengths Survey (youth version) together.'},
+    {name:'Advanced cooking',   color:'--body',  prompt:'Build the recipe repertoire beyond starters — into meals she could feed a friend.'},
+    {name:'Driving prep',       color:'--rest',  prompt:'Create a family emergency plan and confirm she knows it cold.'},
+    {name:'Investing basics',   color:'--money', prompt:'Use an online compound interest calculator to show how $100 at 12 grows by 30.'}
+  ]},
+  {age:16,focus:[
+    {name:'Driver\'s license',  color:'--rest',  prompt:'Walk through the no-questions-asked pickup policy explicitly, in words she can quote back.'},
+    {name:'Part-time work',     color:'--rest',  prompt:'Encourage a small responsibility outside the home: babysitting, dog-walking, tutoring.'},
+    {name:'Advanced finance',   color:'--money', prompt:'Help her create a simple monthly budget using a notebook or free app.'},
+    {name:'Independence',       color:'--body',  prompt:'Teach her to make her own doctor\'s appointments and advocate for herself.'}
+  ]},
+  {age:17,focus:[
+    {name:'College/career plan',color:'--rest',  prompt:'Arrange an informational interview with someone in a field that interests her.'},
+    {name:'Apartment readiness',color:'--body',  prompt:'Practice full meal context — entree, side, drink, table-setting — not just one dish.'},
+    {name:'Advanced independence',color:'--rest',prompt:'Have an open, honest conversation about alcohol, tobacco, and drugs — dialogue, not a lecture.'}
+  ]}
+];
+
+function kzReadBirthday(){
+  try{return (JSON.parse(localStorage.getItem('kenzie_compass_v1')||'{}').settings||{}).birthday||null;}
+  catch(e){return null;}
+}
+function kzAgeFromBirthday(b,now){
+  if(!b) return null;
+  var bd=new Date(b+'T00:00:00'),n=now||new Date();
+  var age=n.getFullYear()-bd.getFullYear();
+  if((n.getMonth()<bd.getMonth())||(n.getMonth()===bd.getMonth()&&n.getDate()<bd.getDate())) age--;
+  return age;
+}
+function kzIsoWeek(d){
+  var t=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  t.setDate(t.getDate()+4-(t.getDay()||7));
+  var y0=new Date(t.getFullYear(),0,1);
+  return Math.ceil((((t-y0)/86400000)+1)/7);
+}
+function kzBandForAge(age){
+  if(age==null) return null;
+  if(age<=12) return KZ_TILE[0];
+  if(age>=17) return KZ_TILE[KZ_TILE.length-1];
+  var hit=KZ_TILE.find(function(b){return b.age===age;});
+  return hit||KZ_TILE[0];
+}
+function renderKenzieTile(){
+  var panel=document.getElementById('kzpanel'); if(!panel) return;
+  var band=kzBandForAge(kzAgeFromBirthday(kzReadBirthday()));
+  var focusEl=document.getElementById('kzfocus');
+  var promptEl=document.getElementById('kzprompt');
+  var rowEl=document.getElementById('kzrow');
+  if(!band){
+    panel.style.removeProperty('--pc');
+    focusEl.style.display='none';
+    rowEl.style.display='none';
+    // Replace any prior content with a single, safe anchor — no innerHTML.
+    promptEl.textContent='';
+    var setupLink=document.createElement('a');
+    setupLink.className='kz-setup';
+    setupLink.href='kenzie.html';
+    setupLink.textContent='Open Compass to anchor Kenzie\'s timeline →';
+    promptEl.appendChild(setupLink);
+    return;
+  }
+  var f=band.focus[(kzIsoWeek(new Date())-1) % band.focus.length];
+  panel.style.setProperty('--pc','var('+f.color+')');
+  focusEl.textContent=f.name;
+  focusEl.style.display='';
+  promptEl.textContent=f.prompt;
+  rowEl.style.display='';
+}
+
 
 /* ============ STORAGE ============ */
 var KEY='atlas_os_v1';
@@ -663,6 +781,7 @@ function renderAll(){
   document.querySelector('#modeseg button[data-mode="'+MODE+'"]').classList.add('on');
   var rb=document.querySelector('#ranges button[data-r="'+RANGE+'"]');if(rb)rb.classList.add('on');
   renderTimeline();renderMVD();renderTasks();wireTop3();renderLog();updateProgress();
+  renderKenzieTile();
 }
 function boot(){
   ensureToday();cur=state.current;MODE=cur.mode||liveMode();
@@ -858,6 +977,22 @@ boot();
 
       await pullAndMerge();
       if(!sync.migrated) await migrateLocalToCloud();
+
+      // Refresh Kenzie's birthday from kenzie_settings so the "this week with Kenzie"
+      // tile is correct on a device that's never opened /kenzie.html.
+      try {
+        var ks = await SB.from('kenzie_settings').select('birthday').eq('user_id', sync.userId).maybeSingle();
+        if(ks.data && ks.data.birthday){
+          var kzc = {};
+          try { kzc = JSON.parse(localStorage.getItem('kenzie_compass_v1')||'{}'); } catch(e){}
+          kzc.settings = kzc.settings || {};
+          if(kzc.settings.birthday !== ks.data.birthday){
+            kzc.settings.birthday = ks.data.birthday;
+            localStorage.setItem('kenzie_compass_v1', JSON.stringify(kzc));
+            renderKenzieTile();
+          }
+        }
+      } catch(err){ console.warn('[atlas-sync] kenzie_settings fetch failed', err); }
 
       // After boot, any pending writes still in queue (e.g. from offline last session) flush now.
       flushPending();
