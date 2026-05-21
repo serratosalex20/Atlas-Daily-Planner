@@ -1516,11 +1516,14 @@ function boot(){
   var tdate=document.getElementById('taskdate'); if(tdate && !tdate.value) tdate.value=dkey();
   renderAll();tick();setInterval(tick,30000);
 }
-boot();
-
 /* ============ WEB PUSH UI ============
    Placeholder API + render-state function. Real subscribe/sendTest/disable
    implementations are bolted on by the sync IIFE below once SB and sync.userId exist.
+
+   MUST be assigned BEFORE boot() is called — renderAll() → renderNotifs() reads
+   window.atlasPush.status() during the first paint. Object-property assignments
+   don't hoist (unlike function declarations), so putting this after boot() would
+   throw a TypeError inside renderNotifs and silently kill the rest of boot().
 */
 window.atlasPush = {
   status:    function(){ try{return localStorage.getItem('atlas_push_subscribed')==='1'?'subscribed':'not-subscribed';}catch(e){return 'unknown';} },
@@ -1544,7 +1547,8 @@ function renderNotifs(){
     act.innerHTML = '<span>Re-enable in your browser\'s site settings.</span>';
     return;
   }
-  var sub = window.atlasPush.status();
+  // Defensive: in case the placeholder ever loads later than expected.
+  var sub = (window.atlasPush && window.atlasPush.status) ? window.atlasPush.status() : 'unknown';
   if(sub === 'subscribed'){
     st.innerHTML = '<span class="nf-state on">🔔 Notifications ON · this device</span>';
     act.innerHTML = '<a class="primary" id="nf-test">Send test</a> · <a class="danger" id="nf-disable">Disable</a>';
@@ -1556,6 +1560,9 @@ function renderNotifs(){
     document.getElementById('nf-sub').onclick = function(){ window.atlasPush.subscribe(); };
   }
 }
+
+// Now safe to boot — window.atlasPush is in place for renderNotifs() to read.
+boot();
 
 /* ============ SUPABASE SYNC ============
    atlas_os_v1 is NEVER mutated by this block (other than through the existing
