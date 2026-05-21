@@ -142,6 +142,30 @@
   .atlas-journal .entry .del:hover{color:var(--family)}
   .atlas-journal .empty{color:var(--faint);font-size:13px;font-style:italic;padding:6px 2px}
 
+  /* Scheduled tasks — date picker inline in addrow, plus Upcoming collapsible. Mind-teal accent. */
+  .addrow input[type=date]{flex:none;width:auto;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:11px 12px;color:var(--ink);font:inherit;font-size:14px;color-scheme:dark;cursor:pointer;transition:.15s}
+  .addrow input[type=date]:focus{outline:none;border-color:var(--mind);background:#241e16}
+  #tasklist li.scheduled{border-left:3px solid var(--mind)}
+  #tasklist li .due{font-size:10.5px;color:var(--faint);margin-right:6px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+  #tasklist li.overdue .due{color:var(--family)}
+  .upcoming{margin-top:10px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg2)}
+  .upcoming-toggle{width:100%;display:flex;align-items:center;gap:10px;background:transparent;border:0;color:var(--muted);font:inherit;font-size:13px;font-weight:600;padding:11px 14px;cursor:pointer;text-align:left;transition:.15s}
+  .upcoming-toggle:hover{background:rgba(243,236,221,.03);color:var(--ink)}
+  .upcoming-toggle .count{margin-left:auto;background:var(--mind);color:#0e2120;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:.04em}
+  .upcoming-toggle .count.zero{background:var(--line);color:var(--faint)}
+  .upcoming-toggle .caret{display:inline-block;transition:transform .2s;font-size:11px;color:var(--faint);margin-left:6px}
+  .upcoming.open .upcoming-toggle .caret{transform:rotate(180deg)}
+  .upcoming-list{padding:0 14px 12px;border-top:1px solid var(--line);display:none}
+  .upcoming.open .upcoming-list{display:block}
+  .upcoming-day{margin-top:12px}
+  .upcoming-day-label{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--mind);font-weight:700;margin-bottom:6px}
+  .upcoming-day-label.tomorrow{color:var(--gold)}
+  .upcoming-task{display:flex;align-items:center;gap:11px;padding:9px 11px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:6px;font-size:13.5px}
+  .upcoming-task .tx{flex:1}
+  .upcoming-task .del{background:none;border:0;color:var(--faint);font-size:16px;cursor:pointer;padding:0 4px;line-height:1}
+  .upcoming-task .del:hover{color:var(--family)}
+  .upcoming-empty{color:var(--faint);font-size:12.5px;font-style:italic;padding:8px 0 4px;text-align:center}
+
   /* Floor-held / Perfect-day animated badge (in the header) */
   .floor-badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;padding:5px 11px;border-radius:999px;margin-top:9px;color:#2a210f;background:var(--gold);box-shadow:0 0 0 1px rgba(233,184,114,.35),0 6px 16px -8px rgba(233,184,114,.4);opacity:0;transform:translateY(-4px) scale(.85);transition:opacity .35s ease,transform .4s cubic-bezier(.2,.9,.3,1.2);pointer-events:none;align-self:flex-start}
   .floor-badge.show{opacity:1;transform:translateY(0) scale(1)}
@@ -315,10 +339,19 @@
     <h2>Today's Focus</h2>
     <p class="lead">The variable stuff — the specific things only today needs. Type them in; they save here and roll into your log tonight.</p>
     <div class="addrow">
-      <input id="taskinput" placeholder="Add a task for today… (e.g. Call back A Tex lead)" maxlength="120">
+      <input id="taskinput" placeholder="Add a task… (set a future date to schedule)" maxlength="120">
+      <input type="date" id="taskdate" title="When? Default: today. Pick a future date to schedule.">
       <button id="taskadd">Add</button>
     </div>
     <ul id="tasklist"></ul>
+    <div class="upcoming" id="upcoming">
+      <button class="upcoming-toggle" id="upcomingtoggle" type="button">
+        <span>📅 Upcoming (next 7 days)</span>
+        <span class="count zero" id="upcomingcount">0</span>
+        <span class="caret">▾</span>
+      </button>
+      <div class="upcoming-list" id="upcominglist"></div>
+    </div>
   </div>
 
   <div class="panel" style="background:transparent;border:none;box-shadow:none;padding:0">
@@ -983,6 +1016,124 @@ function renderJournal(){
   }
 }
 
+/* ============ ATLAS SCHEDULED TASKS (date-targeted future tasks) ============
+   Today's quick-add tasks remain in state.current.tasks (unchanged path).
+   Scheduled tasks live in atlas_scheduled_tasks (Supabase) + local cache.
+   At render time, today's view UNIONs cur.tasks + AST rows where due_date <= today
+   AND (due_date == today OR NOT done), so overdue items surface in Today's Focus.
+*/
+var AST_CACHE_KEY = 'atlas_scheduled_tasks_v1';
+function astLoad(){ try{return JSON.parse(localStorage.getItem(AST_CACHE_KEY))||{}}catch(e){return{}} }
+function astSaveCache(){ try{localStorage.setItem(AST_CACHE_KEY,JSON.stringify(astState))}catch(e){} }
+
+var astState = astLoad();
+astState.tasks   = astState.tasks   || [];   // [{ id, text, due_date, done, done_at, created_at }]
+astState.pending = astState.pending || [];   // [{ op:'insert'|'toggle'|'delete', payload }]
+
+// Reassigned by the sync IIFE; no-op until then.
+var astSchedulePush = function(){};
+
+function astDueToday(){
+  var today = dkey();
+  return astState.tasks.filter(function(t){
+    if(t.due_date === today) return true;            // today's row, done or not
+    return t.due_date < today && !t.done;            // overdue + open
+  });
+}
+function astUpcoming(){
+  var today = dkey();
+  var maxD = new Date(); maxD.setDate(maxD.getDate() + 7);
+  var maxKey = dkey(maxD);
+  return astState.tasks
+    .filter(function(t){ return !t.done && t.due_date > today && t.due_date <= maxKey; })
+    .sort(function(a,b){ return a.due_date.localeCompare(b.due_date); });
+}
+
+function astAdd(text, dueDate){
+  var t = {
+    id: 'tmp-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),
+    text: text, due_date: dueDate, done: false, done_at: null,
+    created_at: new Date().toISOString()
+  };
+  astState.tasks.push(t);
+  astState.pending.push({ op:'insert', payload:t });
+  astSaveCache();
+  astSchedulePush();
+  return t;
+}
+function astToggle(id){
+  var t = astState.tasks.find(function(x){return x.id===id;});
+  if(!t) return;
+  t.done = !t.done;
+  t.done_at = t.done ? new Date().toISOString() : null;
+  astState.pending.push({ op:'toggle', payload:{ id:id, done:t.done, done_at:t.done_at } });
+  astSaveCache();
+  astSchedulePush();
+}
+function astDelete(id){
+  var idx = astState.tasks.findIndex(function(x){return x.id===id;});
+  if(idx < 0) return;
+  astState.tasks.splice(idx, 1);
+  if(id.indexOf('tmp-') !== 0){
+    astState.pending.push({ op:'delete', payload:{ id:id } });
+  } else {
+    astState.pending = astState.pending.filter(function(op){
+      return !(op.op==='insert' && op.payload && op.payload.id===id);
+    });
+  }
+  astSaveCache();
+  astSchedulePush();
+}
+
+var _upcomingWired = false;
+function wireUpcoming(){
+  if(_upcomingWired) return;
+  var panel = document.getElementById('upcoming');
+  var btn = document.getElementById('upcomingtoggle');
+  if(!panel || !btn) return;
+  btn.onclick = function(){ panel.classList.toggle('open'); };
+  _upcomingWired = true;
+}
+
+function renderUpcoming(){
+  if(!document.getElementById('upcoming')) return;
+  var list = astUpcoming();
+  var count = document.getElementById('upcomingcount');
+  count.textContent = list.length;
+  count.classList.toggle('zero', list.length === 0);
+  var box = document.getElementById('upcominglist');
+  box.innerHTML = '';
+  if(!list.length){
+    var e = document.createElement('div'); e.className='upcoming-empty';
+    e.textContent = 'No upcoming tasks. Tap the date picker above to schedule one.';
+    box.appendChild(e);
+    return;
+  }
+  var groups = {};
+  list.forEach(function(t){ (groups[t.due_date] = groups[t.due_date] || []).push(t); });
+  var tom = new Date(); tom.setDate(tom.getDate()+1); var tomKey = dkey(tom);
+  Object.keys(groups).sort().forEach(function(date){
+    var day = document.createElement('div'); day.className='upcoming-day';
+    var label = document.createElement('div'); label.className='upcoming-day-label';
+    if(date === tomKey) label.classList.add('tomorrow');
+    var d = new Date(date+'T00:00:00');
+    var pref = date === tomKey ? 'Tomorrow · ' : '';
+    label.textContent = pref + d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+    day.appendChild(label);
+    groups[date].forEach(function(t){
+      var row = document.createElement('div'); row.className='upcoming-task';
+      row.innerHTML = '<span class="tx"></span><button class="del" title="delete">×</button>';
+      row.querySelector('.tx').textContent = t.text;
+      row.querySelector('.del').onclick = (function(id){return function(){
+        astDelete(id); renderUpcoming();
+      };})(t.id);
+      day.appendChild(row);
+    });
+    box.appendChild(day);
+  });
+  wireUpcoming();
+}
+
 
 /* ============ STORAGE ============ */
 var KEY='atlas_os_v1';
@@ -1105,7 +1256,10 @@ function renderMVD(){
 }
 function renderTasks(){
   var ul=document.getElementById('tasklist');ul.innerHTML='';
-  if(!cur.tasks.length){ul.innerHTML='<div class="empty">Nothing added yet. What does today actually need?</div>';return;}
+  var today=dkey();
+  var astToday=(typeof astDueToday==='function') ? astDueToday() : [];
+  if(!cur.tasks.length && !astToday.length){ul.innerHTML='<div class="empty">Nothing added yet. What does today actually need?</div>';return;}
+  // 1) Today's quick-add tasks (state.current.tasks — daily_state path).
   cur.tasks.forEach(function(t){
     var li=document.createElement('li');if(t.done)li.className='done';
     li.innerHTML='<span class="tbox"><svg viewBox="0 0 24 24" fill="none" stroke="#15120c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>'+
@@ -1115,11 +1269,42 @@ function renderTasks(){
     li.querySelector('.del').onclick=function(){cur.tasks=cur.tasks.filter(function(x){return x.id!==t.id;});save();renderTasks();renderLog();};
     ul.appendChild(li);
   });
+  // 2) Scheduled tasks due today or overdue (atlas_scheduled_tasks — cloud path).
+  astToday.forEach(function(t){
+    var li=document.createElement('li');
+    li.className='scheduled'+(t.done?' done':'')+(t.due_date<today?' overdue':'');
+    var dueLbl='';
+    if(t.due_date<today){
+      var d=new Date(t.due_date+'T00:00:00');
+      dueLbl='<span class="due">overdue · '+d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span>';
+    }
+    li.innerHTML='<span class="tbox"><svg viewBox="0 0 24 24" fill="none" stroke="#15120c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>'+
+      '<span class="tx"></span>'+dueLbl+'<button class="del" title="delete">×</button>';
+    li.querySelector('.tx').textContent=t.text;
+    li.querySelector('.tbox').onclick=(function(id){return function(){astToggle(id);renderTasks();renderUpcoming();renderLog();};})(t.id);
+    li.querySelector('.del').onclick=(function(id){return function(){astDelete(id);renderTasks();renderUpcoming();renderLog();};})(t.id);
+    ul.appendChild(li);
+  });
 }
 function addTask(){
   var inp=document.getElementById('taskinput'),v=inp.value.trim();if(!v)return;
-  cur.tasks.push({id:Date.now()+''+Math.random().toString(36).slice(2,6),text:v,done:false});
-  inp.value='';save();renderTasks();renderLog();
+  var dateInp=document.getElementById('taskdate');
+  var d=(dateInp && dateInp.value) ? dateInp.value : dkey();
+  var today=dkey();
+  if(d===today){
+    cur.tasks.push({id:Date.now()+''+Math.random().toString(36).slice(2,6),text:v,done:false});
+    save();
+  } else if(d>today){
+    astAdd(v,d);
+    var fmt=new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    toast('Scheduled for '+fmt);
+  } else {
+    toast('Pick today or a future date.');
+    return;
+  }
+  inp.value='';
+  if(dateInp) dateInp.value=today;
+  renderTasks();renderUpcoming();renderLog();
 }
 function markNow(){
   var list=listFor(MODE),now=new Date().getHours()*60+new Date().getMinutes();
@@ -1304,12 +1489,14 @@ function renderAll(){
   document.querySelector('#modeseg button[data-mode="'+MODE+'"]').classList.add('on');
   var rb=document.querySelector('#ranges button[data-r="'+RANGE+'"]');if(rb)rb.classList.add('on');
   renderTimeline();renderMVD();renderTasks();wireTop3();renderLog();updateProgress();
-  renderKenzieTile();renderSundayReview();renderJournal();
+  renderKenzieTile();renderSundayReview();renderJournal();renderUpcoming();
 }
 function boot(){
   ensureToday();cur=state.current;MODE=cur.mode||liveMode();
   var hr=new Date().getHours();var g=hr<11?'Good morning':hr<17?'Good afternoon':'Good evening';
   document.getElementById('greeting').innerHTML=g+', <b>Alex</b>. One block at a time.';
+  // Default the schedule-task date picker to today.
+  var tdate=document.getElementById('taskdate'); if(tdate && !tdate.value) tdate.value=dkey();
   renderAll();tick();setInterval(tick,30000);
 }
 boot();
@@ -1536,6 +1723,66 @@ boot();
     } catch(err){ console.warn('[atlas-journal] pull failed', err); }
   }
 
+  /* ---- atlas_scheduled_tasks: pull-all on boot, debounced push of insert/toggle/delete ---- */
+  var astPushTimer = null;
+  astSchedulePush = function(){ clearTimeout(astPushTimer); astPushTimer = setTimeout(astFlush, 1500); };
+
+  async function astFlush(){
+    if(!sync.userId || !navigator.onLine) return;
+    var ops = astState.pending.slice();
+    astState.pending = []; astSaveCache();
+    for(var i=0; i<ops.length; i++){
+      var op = ops[i];
+      try {
+        if(op.op === 'insert'){
+          var p = op.payload;
+          var resI = await SB.from('atlas_scheduled_tasks')
+            .insert({ user_id: sync.userId, text: p.text, due_date: p.due_date, done: false })
+            .select().single();
+          if(resI.error) throw resI.error;
+          // Swap tmp id for the server-assigned uuid so toggles/deletes target the right row.
+          var idx = astState.tasks.findIndex(function(t){return t.id === p.id;});
+          if(idx >= 0){ astState.tasks[idx].id = resI.data.id; astSaveCache(); }
+        } else if(op.op === 'toggle'){
+          var resT = await SB.from('atlas_scheduled_tasks')
+            .update({ done: op.payload.done, done_at: op.payload.done_at })
+            .eq('id', op.payload.id).eq('user_id', sync.userId);
+          if(resT.error) throw resT.error;
+        } else if(op.op === 'delete'){
+          var resD = await SB.from('atlas_scheduled_tasks').delete()
+            .eq('id', op.payload.id).eq('user_id', sync.userId);
+          if(resD.error) throw resD.error;
+        }
+      } catch(err){
+        console.warn('[atlas-st] op failed; re-queueing', op, err);
+        astState.pending.push(op); astSaveCache();
+      }
+    }
+  }
+
+  async function astPullAll(){
+    if(!sync.userId) return;
+    try {
+      var res = await SB.from('atlas_scheduled_tasks').select('*')
+        .eq('user_id', sync.userId)
+        .order('due_date', { ascending:true }).limit(500);
+      if(res.error) throw res.error;
+      if(res.data){
+        // Preserve local-only pending inserts; cloud rows replace the rest.
+        var pendingInsertIds = astState.pending
+          .filter(function(o){return o.op==='insert';})
+          .map(function(o){return o.payload.id;});
+        var localPending = astState.tasks.filter(function(t){ return pendingInsertIds.indexOf(t.id) >= 0; });
+        astState.tasks = res.data.map(function(r){
+          return { id:r.id, text:r.text, due_date:r.due_date, done:r.done, done_at:r.done_at, created_at:r.created_at };
+        }).concat(localPending);
+        astSaveCache();
+        if(typeof renderTasks === 'function') renderTasks();
+        if(typeof renderUpcoming === 'function') renderUpcoming();
+      }
+    } catch(err){ console.warn('[atlas-st] pull failed', err); }
+  }
+
   /* ---- boot: sign in (anon), pull, migrate, push anything pending ---- */
   async function bootSync(){
     try {
@@ -1573,9 +1820,12 @@ boot();
       // Atlas journal: pull cloud copy so new devices see your past entries.
       await ajPullAll();
 
+      // Atlas scheduled tasks: pull future-dated tasks too.
+      await astPullAll();
+
       // After boot, any pending writes still in queue (e.g. from offline last session) flush now.
-      flushPending(); ajFlush();
-      window.addEventListener('online', function(){ flushPending(); ajFlush(); });
+      flushPending(); ajFlush(); astFlush();
+      window.addEventListener('online', function(){ flushPending(); ajFlush(); astFlush(); });
     } catch(err){
       console.warn('[atlas-sync] boot failed; staying cache-only.', err);
     }
