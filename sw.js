@@ -36,14 +36,20 @@ self.addEventListener('push', (event) => {
     try { data = Object.assign(data, event.data.json()); }
     catch (e) { data.body = event.data.text(); }
   }
+  // Test pushes stick around (requireInteraction) so you can confirm they arrived
+  // even if Windows Focus Assist tries to bury them. Real reminders fade normally.
+  const isTest = (data.tag || '').indexOf('atlas-test') === 0;
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: 'icon-192.png',
       badge: 'icon-192.png',
-      tag: data.tag,                       // dedupes back-to-back notifications with same tag
+      tag: data.tag,                            // dedupes back-to-back same-tag
+      renotify: true,                           // force re-display on repeat sends
+      vibrate: [120, 60, 120],                  // mobile only, no-op on desktop
+      silent: false,                            // override Chrome's "auto-silent for chatty sites"
+      requireInteraction: isTest,               // test pushes persist; real reminders fade
       data: { url: data.url },
-      requireInteraction: false,
     })
   );
 });
