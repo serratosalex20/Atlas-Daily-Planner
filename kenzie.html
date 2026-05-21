@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Kenzie — Compass</title>
+<meta name="theme-color" content="#16130E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Compass">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Supabase JS client (UMD build — global `supabase`). -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#16130E;--bg2:#1E1A13;--ink:#F3ECDD;--muted:#A89E8B;--faint:#6E6553;
+    --line:rgba(243,236,221,.10);--card:#211C15;--card2:#272018;
+    --body:#F0A35E;--mind:#52B7AC;--spirit:#A78BFA;--family:#F0726A;--money:#8FC56B;--rest:#8893A6;
+    --gold:#E9B872;--kz-safety:#C84A4A;
+    --radius:16px;--shadow:0 1px 0 rgba(255,255,255,.03) inset,0 10px 30px -12px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(900px 500px at 78% -8%,rgba(240,114,106,.10),transparent 60%),
+      radial-gradient(700px 500px at 0% 0%,rgba(233,184,114,.06),transparent 55%),var(--bg);
+    color:var(--ink);font-family:"Hanken Grotesk",system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+    line-height:1.45;min-height:100vh;padding-top:env(safe-area-inset-top);
+  }
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");}
+  .wrap{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:26px 18px 90px}
+
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:6px}
+  .brand .eyebrow{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--family);font-weight:600}
+  .brand h1{font-family:"Fraunces",serif;font-weight:600;font-size:clamp(30px,6vw,46px);line-height:1.02;margin:6px 0 2px;letter-spacing:-.01em}
+  .brand h1 em{font-style:italic;color:var(--family)}
+  .brand .sub{color:var(--muted);font-size:14px}
+  .brand .sub b{color:var(--ink);font-weight:600}
+  .backlink{color:var(--faint);font-size:12px;letter-spacing:.18em;text-transform:uppercase;text-decoration:none;align-self:flex-start;margin-top:6px;border-bottom:1px dashed var(--faint);padding-bottom:1px}
+  .backlink:hover{color:var(--ink);border-color:var(--ink)}
+
+  .panel{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:18px;box-shadow:var(--shadow)}
+  .panel h2{font-family:"Fraunces",serif;font-weight:600;font-size:18px;margin:0 0 4px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+  .panel .lead{color:var(--muted);font-size:13px;margin:0 0 14px}
+
+  /* Setup card */
+  .setup{background:linear-gradient(180deg,rgba(240,114,106,.10),var(--card));border-color:rgba(240,114,106,.25)}
+  .setup label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px;font-weight:600}
+  .setup input[type=date]{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--ink);font:inherit;font-size:14px;margin-right:8px;color-scheme:dark}
+  .setup input[type=date]:focus{outline:none;border-color:var(--family);background:#241e16}
+  .setup .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .setup .btn{flex:none;width:auto;background:var(--family);color:#2a210f}
+
+  /* This week's focus */
+  .wfocus{background:linear-gradient(135deg,rgba(233,184,114,.10),var(--card) 60%);border-color:rgba(233,184,114,.32)}
+  .wfocus h2 .star{color:var(--gold)}
+  .wfocus .topic{font-family:"Fraunces",serif;font-size:22px;font-weight:600;letter-spacing:-.01em;margin:6px 0 8px;color:var(--gold)}
+  .wfocus .prompt{font-size:15px;line-height:1.55;color:var(--ink);background:var(--bg2);border-left:3px solid var(--gold);padding:13px 15px;border-radius:0 12px 12px 0;margin-bottom:14px}
+  .wfocus .meta{font-size:11.5px;color:var(--faint);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:4px}
+  .wfocus .acts{display:flex;gap:8px;flex-wrap:wrap}
+  .wfocus .acts button{appearance:none;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:inherit;font-size:13px;font-weight:600;padding:9px 14px;border-radius:11px;cursor:pointer;transition:.16s}
+  .wfocus .acts button:hover{background:#241e16;border-color:rgba(243,236,221,.2)}
+  .wfocus .acts button.primary{background:var(--gold);color:#2a210f;border-color:transparent}
+  .wfocus .acts button.primary:hover{filter:brightness(1.05)}
+  .wfocus .acts button:disabled{opacity:.5;cursor:not-allowed}
+
+  /* Sections / Eight */
+  .secs{display:grid;gap:9px}
+  .sec{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--pc,var(--gold));border-radius:13px;overflow:hidden;transition:.18s}
+  .sec.open{border-color:rgba(243,236,221,.18)}
+  .sec .head{display:flex;align-items:center;gap:12px;padding:13px 15px;cursor:pointer;user-select:none}
+  .sec .head:hover{background:rgba(255,255,255,.02)}
+  .sec .num{font-family:"Fraunces",serif;font-size:18px;font-weight:600;color:var(--pc,var(--gold));width:22px;flex:none;text-align:center}
+  .sec .ttl{flex:1;font-weight:600;font-size:15px}
+  .sec .ttl small{display:block;color:var(--muted);font-weight:400;font-size:12.5px;margin-top:2px}
+  .sec .count{font-size:11.5px;color:var(--faint);letter-spacing:.08em;font-weight:600;font-variant-numeric:tabular-nums}
+  .sec .chev{color:var(--faint);transition:.18s;flex:none}
+  .sec.open .chev{transform:rotate(90deg);color:var(--ink)}
+  .sec .body{display:none;padding:0 15px 16px 15px;border-top:1px solid var(--line)}
+  .sec.open .body{display:block;padding-top:14px}
+  .sec .lessons{margin:0 0 14px 0;padding:0;list-style:none;display:grid;gap:7px}
+  .sec .lessons li{font-size:13.5px;color:var(--muted);padding-left:14px;position:relative;line-height:1.5}
+  .sec .lessons li::before{content:"";position:absolute;left:0;top:8px;width:5px;height:5px;border-radius:50%;background:var(--pc,var(--gold));opacity:.55}
+  .sec .acts-header{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:8px}
+  .sec .acts{display:grid;gap:7px}
+  .sec .act{display:flex;align-items:flex-start;gap:11px;padding:10px 12px;background:var(--bg2);border:1px solid var(--line);border-radius:11px;cursor:pointer;transition:.16s}
+  .sec .act:hover{background:#241e16}
+  .sec .act .chk{flex:none;width:22px;height:22px;border-radius:7px;border:2px solid var(--pc,var(--gold));display:grid;place-items:center;margin-top:1px;transition:.16s}
+  .sec .act .chk svg{width:12px;height:12px;opacity:0;transform:scale(.4);transition:.16s;stroke:#15120c}
+  .sec .act.done .chk{background:var(--pc,var(--gold))}
+  .sec .act.done .chk svg{opacity:1;transform:scale(1)}
+  .sec .act .tx{flex:1;font-size:13.5px;line-height:1.5}
+  .sec .act.done .tx{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+
+  /* Age timeline */
+  .timeline{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scrollbar-width:thin}
+  .agecard{flex:none;width:160px;background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:12px 13px;transition:.18s;cursor:default}
+  .agecard.current{background:linear-gradient(180deg,rgba(233,184,114,.10),var(--bg2));border-color:rgba(233,184,114,.5);box-shadow:0 0 0 1px rgba(233,184,114,.18)}
+  .agecard .age{font-family:"Fraunces",serif;font-size:22px;font-weight:600;letter-spacing:-.01em}
+  .agecard.current .age{color:var(--gold)}
+  .agecard .focus{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4}
+  .agecard .ms{margin-top:8px;display:grid;gap:5px}
+  .agecard .ms .m{display:flex;align-items:flex-start;gap:6px;font-size:11.5px;line-height:1.35;cursor:pointer;color:var(--muted)}
+  .agecard .ms .m:hover{color:var(--ink)}
+  .agecard .ms .m .dot{flex:none;width:11px;height:11px;border-radius:50%;border:1.5px solid var(--faint);margin-top:2px;transition:.16s}
+  .agecard .ms .m.done .dot{background:var(--money);border-color:var(--money)}
+  .agecard .ms .m.done span{color:var(--faint);text-decoration:line-through;text-decoration-color:var(--faint)}
+
+  /* Journal */
+  .journal .addj{display:grid;gap:9px;margin-bottom:14px}
+  .journal .addj .frow{display:flex;gap:8px;flex-wrap:wrap}
+  .journal input[type=date],.journal select,.journal textarea{background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:10px 12px;color:var(--ink);font:inherit;font-size:14px;color-scheme:dark}
+  .journal input[type=date]{width:160px}
+  .journal select{flex:1;min-width:160px}
+  .journal textarea{width:100%;min-height:74px;resize:vertical;line-height:1.5}
+  .journal input:focus,.journal select:focus,.journal textarea:focus{outline:none;border-color:var(--family);background:#241e16}
+  .journal .saverow{display:flex;gap:8px;justify-content:flex-end}
+  .journal .btn{flex:none;width:auto;background:var(--family);color:#2a210f;padding:10px 18px}
+  .journal .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+  .journal .entries{display:grid;gap:10px}
+  .journal .entry{padding:12px 14px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--pc,var(--family));border-radius:11px}
+  .journal .entry .meta{display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;font-weight:600;margin-bottom:6px}
+  .journal .entry .meta .tag{padding:2px 7px;border-radius:999px;color:#15120c;background:var(--pc,var(--family));font-size:10px;letter-spacing:.06em}
+  .journal .entry .body{font-size:14px;line-height:1.55;white-space:pre-wrap}
+  .journal .entry .del{margin-left:auto;background:none;border:0;color:var(--faint);cursor:pointer;font-size:16px;line-height:1;padding:0 4px}
+  .journal .entry .del:hover{color:var(--family)}
+  .journal .empty{color:var(--faint);font-size:13px;font-style:italic;padding:6px 2px}
+
+  /* Generic button */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--family);color:#2a210f;border:0;border-radius:12px;padding:12px 20px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;transition:.16s}
+  .btn:active{transform:scale(.985)}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+
+  .footnote{color:var(--faint);font-size:12px;text-align:center;margin-top:26px;line-height:1.6}
+  .footnote b{color:var(--muted)}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--family);color:#2a1010;font-weight:700;font-size:13.5px;padding:11px 18px;border-radius:999px;z-index:60;opacity:0;transition:.3s;pointer-events:none;text-align:center;max-width:90%}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="eyebrow">Kenzie · Compass</div>
+      <h1>Today, <em>intentional.</em></h1>
+      <div class="sub" id="agesub">A roadmap, not a checklist.</div>
+    </div>
+    <a class="backlink" href="index.html">← Atlas</a>
+  </header>
+
+  <!-- Birthday setup (only when not set; collapses once known) -->
+  <div class="panel setup" id="setuppanel" style="display:none">
+    <h2>Anchor the timeline</h2>
+    <p class="lead">Set Kenzie's birthday once. The age band and "this week's focus" follow her — no resetting needed.</p>
+    <div class="row">
+      <div>
+        <label for="bdayinput">Kenzie's birthday</label>
+        <input type="date" id="bdayinput">
+      </div>
+      <button class="btn" id="bdaysave">Save</button>
+    </div>
+  </div>
+
+  <!-- This week's focus -->
+  <div class="panel wfocus" id="wfocuspanel">
+    <h2><span class="star">⭐</span> This week with Kenzie</h2>
+    <div class="meta" id="wfmeta">—</div>
+    <div class="topic" id="wftopic">—</div>
+    <div class="prompt" id="wfprompt">Set Kenzie's birthday to see this week's focus.</div>
+    <div class="acts">
+      <button id="wfmark" class="primary" disabled>✓ Mark this conversation happened</button>
+      <button id="wfjump" disabled>Jump to this section</button>
+    </div>
+  </div>
+
+  <!-- The Eight -->
+  <div class="panel">
+    <h2>The Eight</h2>
+    <p class="lead">The framework. Tap a section to open the activities — each one is a small, concrete thing you and Kenzie can do together. Tap when done. No deadlines, no streaks. This is a compass.</p>
+    <div class="secs" id="secs"></div>
+  </div>
+
+  <!-- Age timeline -->
+  <div class="panel">
+    <h2>Age timeline</h2>
+    <p class="lead">Focus areas and milestones for each year, age 12 → 17–18. The current age band glows gold. Tap a milestone when she hits it.</p>
+    <div class="timeline" id="timeline"></div>
+  </div>
+
+  <!-- Journal -->
+  <div class="panel journal">
+    <h2>Journal</h2>
+    <p class="lead">A line about a moment, a question you asked her, a conversation you want to remember. Date it. Tag it. Future-you will be glad you wrote it down.</p>
+    <div class="addj">
+      <div class="frow">
+        <input type="date" id="jdate">
+        <select id="jsection"><option value="">— section (optional) —</option></select>
+      </div>
+      <textarea id="jbody" placeholder="What happened today with Kenzie that's worth keeping?"></textarea>
+      <div class="saverow">
+        <button class="btn ghost" id="jclear">Clear</button>
+        <button class="btn" id="jsave">Save entry</button>
+      </div>
+    </div>
+    <div class="entries" id="entries"></div>
+  </div>
+
+  <div class="footnote">
+    Built by Atlas for Alex, in service of Kenzie.<br>
+    <b>A compass, not a checklist. Return to it. Don't finish it.</b>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ STATIC CURRICULUM DATA ============
+   Pulled from "Navigating Life with Confidence" (Manus AI). Eight sections, age bands 12→17.
+   Each activity has a stable item_key so progress survives schema/UI changes.
+*/
+var SECTIONS = [
+  { num:1, slug:'values', title:'Core Values', color:'--gold',
+    lead:'The internal compass that guides decisions when no one is watching.',
+    lessons:[
+      'Integrity: doing the right thing when it is hard. Reputation is built one decision at a time.',
+      'Empathy & Compassion: feel with others; let it motivate action.',
+      'Resilience: the capacity to move through difficulty, not avoid it.',
+      'Respect — for self and others: dignity, regardless of differences.',
+      'Gratitude & Generosity: one of the strongest predictors of happiness.',
+      'Responsibility & Accountability: own commitments; make it right when you fall short.'
+    ],
+    activities:[
+      { key:'activity:values:guide_through_mistake', text:'When she makes a mistake, guide her through acknowledging it, apologizing sincerely, and making it right — don\'t fix it for her.' },
+      { key:'activity:values:family_volunteer',       text:'Volunteer together as a family on a recurring schedule.' },
+      { key:'activity:values:diverse_stories',        text:'Choose books, films, or shows that feature perspectives different from her own. Discuss after.' },
+      { key:'activity:values:praise_effort',          text:'After a failure or loss, ask: "What did you learn?" — praise effort, not just results.' },
+      { key:'activity:values:gratitude_dinner',       text:'Start a family gratitude practice at dinner: each person shares one thing they\'re grateful for.' },
+      { key:'activity:values:age_appropriate_chores', text:'Assign her age-appropriate responsibilities and hold her to them, even when she forgets.' },
+      { key:'activity:values:model_apology',          text:'Model integrity yourself by openly admitting your own errors in front of her.' }
+    ]},
+
+  { num:2, slug:'emotional', title:'Emotional Intelligence', color:'--spirit',
+    lead:'Identify, understand, manage, and express emotions — and navigate the emotions of others.',
+    lessons:[
+      'Emotions are information, not good or bad.',
+      'Feeling an emotion is not the same as acting on it.',
+      'Physical sensations (tight chest, racing heart) are the body signaling an emotional state.',
+      'The pause: breathe and count to 10 before responding.',
+      'Growth mindset: abilities develop through dedication. Failure is feedback, not a verdict.'
+    ],
+    activities:[
+      { key:'activity:emotional:vocab_list',     text:'Keep an "emotion vocabulary" list on the fridge — apprehensive, melancholy, elated, frustrated, overwhelmed, content.' },
+      { key:'activity:emotional:end_of_day',     text:'At the end of each day, ask her to name the strongest emotion she felt and what triggered it.' },
+      { key:'activity:emotional:breath_4_4_4',   text:'Practice deep breathing together: inhale 4, hold 4, exhale 4.' },
+      { key:'activity:emotional:calm_down_kit',  text:'Build a "calm-down kit" together — stress ball, favorite scent, journal, playlist.' },
+      { key:'activity:emotional:pause_movie',    text:'Pause a movie and ask: "What is that character feeling right now? Why?"' },
+      { key:'activity:emotional:active_listen',  text:'Practice active listening — she summarizes what the other person said before responding.' },
+      { key:'activity:emotional:famous_failures',text:'Share stories of famous people who failed before succeeding (Rowling, Oprah, Serena).' },
+      { key:'activity:emotional:three_questions',text:'After a setback, ask three questions: What happened? What did I learn? What will I do differently?' }
+    ]},
+
+  { num:3, slug:'financial', title:'Financial Literacy', color:'--money',
+    lead:'Money is a tool, not a measure of worth. Spend intentionally; build a healthy relationship early.',
+    lessons:[
+      'Every dollar is the result of someone\'s time and effort.',
+      'Needs vs wants: food/shelter/healthcare vs entertainment/fashion/luxuries.',
+      'The 50/30/20 rule: 50% needs, 30% wants, 20% savings.',
+      'Interest is the cost of borrowing — the longer you take, the more you pay.',
+      'Compound interest: the earlier you start, the more powerful it becomes.',
+      'A budget is not a restriction — it is a tool for freedom.'
+    ],
+    activities:[
+      { key:'activity:financial:allowance_split',     text:'Give her a weekly or monthly allowance and require her to divide it: Spend, Save, Give.' },
+      { key:'activity:financial:meal_budget',         text:'Let her manage the grocery budget for one family meal per week. She plans, compares prices, buys.' },
+      { key:'activity:financial:teen_savings',        text:'Open a teen savings account together and show her how to track the balance.' },
+      { key:'activity:financial:monthly_budget',      text:'Help her create a simple monthly budget for her allowance using a notebook or free app.' },
+      { key:'activity:financial:dream_trip',          text:'Plan a hypothetical "dream trip" together. Research costs and calculate how long it would take to save.' },
+      { key:'activity:financial:loan_with_interest',  text:'Let her "borrow" money from you with a small interest charge and a repayment plan.' },
+      { key:'activity:financial:credit_card_walkthrough',text:'Explain your own credit card bill together — minimum payment, rate, true cost of paying minimum only.' },
+      { key:'activity:financial:compound_calculator', text:'Use an online compound interest calculator to show how $100 at 12 grows by 30.' },
+      { key:'activity:financial:index_funds_chat',    text:'Introduce index funds and long-term investing in simple, age-appropriate terms.' }
+    ]},
+
+  { num:4, slug:'practical', title:'Practical Daily Living', color:'--body',
+    lead:'Independence is built one skill at a time. The basics of running a life.',
+    lessons:[
+      'Cooking is self-care, creativity, and independence — not just food.',
+      'Sleep is not optional. 8–10 hours is the floor.',
+      'Time management reduces stress and creates space for what matters.',
+      'Single-task focus beats multitasking.',
+      'Read nutrition labels. Hydration changes mood and focus.'
+    ],
+    activities:[
+      { key:'activity:practical:own_laundry',     text:'Assign her full responsibility for her own laundry.' },
+      { key:'activity:practical:weekly_clean',    text:'Establish a weekly cleaning routine for her room.' },
+      { key:'activity:practical:kitchen_cleanup', text:'Require her to clean up after every meal she cooks.' },
+      { key:'activity:practical:basic_repairs',   text:'Teach her to use a hammer, screwdriver, and plunger.' },
+      { key:'activity:practical:starter_recipes', text:'Master the starter recipe set: eggs, pasta, stir-fry, salad with homemade dressing, baked chicken/fish.' },
+      { key:'activity:practical:weekly_schedule', text:'Help her set up a weekly schedule with school, homework, chores, activities, and rest.' },
+      { key:'activity:practical:pomodoro',        text:'Introduce the Pomodoro Technique: 25 minutes work, 5 minute break.' },
+      { key:'activity:practical:weekly_review',   text:'At the start of each week, review upcoming commitments together.' },
+      { key:'activity:practical:own_doctor',      text:'Teach her to make her own doctor\'s appointments and advocate for herself.' }
+    ]},
+
+  { num:5, slug:'social', title:'Social Skills & Relationships', color:'--family',
+    lead:'The quality of relationships is the strongest predictor of long-term happiness.',
+    lessons:[
+      'Active listening means understanding, not waiting to respond.',
+      'Assertive ≠ aggressive. Direct, honest, respectful.',
+      '"I feel" statements over "You always" accusations.',
+      'Boundaries are not walls — they make relationships safe and sustainable.',
+      '"No, that\'s not for me" is a complete sentence.'
+    ],
+    activities:[
+      { key:'activity:social:real_phone_calls', text:'Practice phone calls for real tasks: ordering food, calling a doctor\'s office, following up on a package.' },
+      { key:'activity:social:roleplay_hard',    text:'Role-play hard conversations — asking a teacher for help, addressing a friend conflict, saying no to peer pressure.' },
+      { key:'activity:social:boundary_types',   text:'Discuss the four boundary types: physical, emotional, digital, time.' },
+      { key:'activity:social:practice_no',      text:'Practice saying "no" in different scenarios: declining an invite, refusing to share her phone password, declining physical contact.' },
+      { key:'activity:social:relationship_test',text:'When watching shows together, ask: "Is this a healthy relationship? Why or why not?"' },
+      { key:'activity:social:unsafe_plan',      text:'Talk openly about what to do if she ever feels unsafe in a relationship.' },
+      { key:'activity:social:family_codeword',  text:'Establish a family code word she can text you to be picked up from a situation without embarrassment.' }
+    ]},
+
+  { num:6, slug:'digital', title:'Digital Safety & Tech Literacy', color:'--mind',
+    lead:'She is a digital native. The internet is not going away — but it carries real risks.',
+    lessons:[
+      'Anything posted is potentially permanent and public, even if deleted.',
+      'Before posting, ask: would I be okay with my grandmother, a teacher, a future employer seeing this?',
+      'Online predators pose as peers. Never meet someone you\'ve only known online without telling a parent.',
+      'Social media is a highlight reel, not reality. Algorithms optimize for engagement, not truth.',
+      'Screens before bed disrupt sleep. Take breaks from social media.'
+    ],
+    activities:[
+      { key:'activity:digital:privacy_review',     text:'Review the privacy settings on every one of her apps together.' },
+      { key:'activity:digital:tech_agreement',     text:'Create a family technology agreement: screen time, acceptable content, what to do if she sees something disturbing.' },
+      { key:'activity:digital:fact_check',         text:'Practice fact-checking together. Find an online claim and trace it to its original source.' },
+      { key:'activity:digital:mental_health_chat', text:'Discuss the impact of social media on mental health and body image — openly, without judgment.' },
+      { key:'activity:digital:no_screens_bedtime', text:'Establish a "no screens one hour before bedtime" rule.' },
+      { key:'activity:digital:strong_passwords',   text:'Set up strong, unique passwords for each account. Use a password manager together.' }
+    ]},
+
+  { num:7, slug:'career', title:'Career Readiness', color:'--rest',
+    lead:'At 12 she isn\'t choosing a career — she\'s building the habits that will make any career work.',
+    lessons:[
+      'The sweet spot: what you\'re good at × what you enjoy × what the world needs.',
+      'Strengths can be developed; they are not fixed.',
+      'It is okay to not know yet. The goal at 12 is exploration, not decision.',
+      'A dream without a plan is just a wish. SMART: Specific, Measurable, Achievable, Relevant, Time-bound.',
+      'Reliability — showing up and doing what you said — is the most valued professional quality.'
+    ],
+    activities:[
+      { key:'activity:career:strengths_survey',    text:'Take the VIA Character Strengths Survey (youth version) together.' },
+      { key:'activity:career:try_varied',          text:'Encourage her to try a wide range — sports, arts, tech, community service — and notice what energizes her.' },
+      { key:'activity:career:alive_question',      text:'Ask weekly: "What did you do this week that made you feel most alive?"' },
+      { key:'activity:career:first_smart',         text:'Help her set one SMART goal in each area: academic, personal, health, social.' },
+      { key:'activity:career:goal_tracker',        text:'Build a visual goal tracker — a poster, journal page, or digital board.' },
+      { key:'activity:career:professional_email',  text:'Teach her to write a professional email, make a phone call, and introduce herself formally.' },
+      { key:'activity:career:small_responsibility',text:'Encourage a small responsibility outside the home: babysitting, dog-walking, tutoring.' },
+      { key:'activity:career:resume_start',        text:'Help her start a simple resume or portfolio of her activities and achievements.' },
+      { key:'activity:career:info_interview',      text:'Arrange an informational interview with someone in a field that interests her.' }
+    ]},
+
+  { num:8, slug:'safety', title:'Safety & Personal Empowerment', color:'--kz-safety',
+    lead:'The non-negotiable layer. Trust her instincts; equip her to act on them.',
+    lessons:[
+      'Trust your instincts. If a situation feels wrong, it is.',
+      'It is always okay to leave a situation that makes her uncomfortable, even if it seems rude.',
+      'Substance use during brain development has specific effects — not just "bad," but mechanistically harmful.',
+      'No-questions-asked pickup: she can always call to get out of an unsafe situation without punishment that night.'
+    ],
+    activities:[
+      { key:'activity:safety:self_defense_class', text:'Enroll her in a self-defense class designed for girls and teens.' },
+      { key:'activity:safety:emergency_plan',     text:'Create a family emergency plan and confirm she knows it cold.' },
+      { key:'activity:safety:help_codeword',      text:'Establish a code word she can use to signal she needs help without alerting anyone around her.' },
+      { key:'activity:safety:substance_dialogue', text:'Have an open, honest conversation about alcohol, tobacco, and drugs — dialogue, not a lecture.' },
+      { key:'activity:safety:noqa_pickup',        text:'Establish the no-questions-asked pickup policy explicitly, in words she can quote back.' }
+    ]}
+];
+
+var AGE_BANDS = [
+  { age:12, focus:[
+      { name:'Emotional awareness', section:'emotional', promptKeys:['activity:emotional:vocab_list','activity:emotional:end_of_day','activity:emotional:calm_down_kit'] },
+      { name:'Basic budgeting',     section:'financial', promptKeys:['activity:financial:allowance_split','activity:financial:teen_savings'] },
+      { name:'Household chores',    section:'practical', promptKeys:['activity:practical:own_laundry','activity:practical:weekly_clean','activity:practical:kitchen_cleanup'] },
+      { name:'Online safety',       section:'digital',   promptKeys:['activity:digital:privacy_review','activity:digital:tech_agreement','activity:digital:strong_passwords'] }
+    ], milestones:[
+      { key:'milestone:age12:bank_account',   text:'Open a teen savings account' },
+      { key:'milestone:age12:laundry',        text:'Take full responsibility for own laundry' },
+      { key:'milestone:age12:tech_agreement', text:'Establish a family technology agreement' }
+    ]},
+  { age:13, focus:[
+      { name:'Self-regulation',     section:'emotional', promptKeys:['activity:emotional:breath_4_4_4','activity:emotional:pause_movie','activity:emotional:three_questions'] },
+      { name:'Goal setting',        section:'career',    promptKeys:['activity:career:first_smart','activity:career:goal_tracker','activity:career:alive_question'] },
+      { name:'Cooking basics',      section:'practical', promptKeys:['activity:practical:starter_recipes','activity:practical:kitchen_cleanup'] },
+      { name:'Healthy friendships', section:'social',    promptKeys:['activity:social:relationship_test','activity:social:practice_no','activity:social:family_codeword'] }
+    ], milestones:[
+      { key:'milestone:age13:weekly_meal',    text:'Cook one meal per week' },
+      { key:'milestone:age13:first_smart',    text:'Set her first SMART goal' },
+      { key:'milestone:age13:privacy_review', text:'Review all social media privacy settings together' }
+    ]},
+  { age:14, focus:[
+      { name:'Conflict resolution', section:'social',    promptKeys:['activity:social:roleplay_hard','activity:social:boundary_types','activity:emotional:active_listen'] },
+      { name:'Credit concepts',     section:'financial', promptKeys:['activity:financial:loan_with_interest','activity:financial:credit_card_walkthrough'] },
+      { name:'Time management',     section:'practical', promptKeys:['activity:practical:weekly_schedule','activity:practical:pomodoro','activity:practical:weekly_review'] },
+      { name:'Self-advocacy',       section:'social',    promptKeys:['activity:social:real_phone_calls','activity:practical:own_doctor'] }
+    ], milestones:[
+      { key:'milestone:age14:budget',          text:'Manage her own personal budget' },
+      { key:'milestone:age14:school_advocacy', text:'Practice self-advocacy at school' },
+      { key:'milestone:age14:volunteer',       text:'Volunteer regularly' }
+    ]},
+  { age:15, focus:[
+      { name:'Career exploration',  section:'career',    promptKeys:['activity:career:strengths_survey','activity:career:try_varied','activity:career:info_interview'] },
+      { name:'Advanced cooking',    section:'practical', promptKeys:['activity:practical:starter_recipes'] },
+      { name:'Driving prep',        section:'safety',    promptKeys:['activity:safety:emergency_plan','activity:safety:help_codeword'] },
+      { name:'Investing basics',    section:'financial', promptKeys:['activity:financial:compound_calculator','activity:financial:index_funds_chat'] }
+    ], milestones:[
+      { key:'milestone:age15:resume',           text:'Begin her resume' },
+      { key:'milestone:age15:clubs_jobs',       text:'Explore interests through clubs or jobs' },
+      { key:'milestone:age15:compound_interest',text:'Learn compound interest hands-on' }
+    ]},
+  { age:16, focus:[
+      { name:'Driver\'s license',   section:'safety',    promptKeys:['activity:safety:emergency_plan','activity:safety:noqa_pickup'] },
+      { name:'Part-time work',      section:'career',    promptKeys:['activity:career:small_responsibility','activity:career:professional_email','activity:career:resume_start'] },
+      { name:'Advanced finance',    section:'financial', promptKeys:['activity:financial:monthly_budget','activity:financial:dream_trip'] },
+      { name:'Independence',        section:'practical', promptKeys:['activity:practical:own_doctor','activity:practical:weekly_schedule'] }
+    ], milestones:[
+      { key:'milestone:age16:first_job',     text:'Land her first job' },
+      { key:'milestone:age16:own_schedule',  text:'Manage her own schedule' },
+      { key:'milestone:age16:taxes',         text:'Understand taxes and paychecks' }
+    ]},
+  { age:17, focus:[
+      { name:'College/career plan', section:'career',    promptKeys:['activity:career:info_interview','activity:career:resume_start'] },
+      { name:'Apartment readiness', section:'practical', promptKeys:['activity:practical:starter_recipes','activity:practical:basic_repairs'] },
+      { name:'Advanced independence',section:'safety',   promptKeys:['activity:safety:substance_dialogue','activity:safety:noqa_pickup'] }
+    ], milestones:[
+      { key:'milestone:age17:applications',   text:'Apply for college or career programs' },
+      { key:'milestone:age17:full_household', text:'Practice full household management' }
+    ]}
+];
+
+/* ============ HELPERS ============ */
+var pad=function(n){return String(n).padStart(2,'0');};
+var dkey=function(d){d=d||new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());};
+
+// Standard ISO 8601 week number (Monday-start). Same week every year → deterministic rotation.
+function isoWeek(d){
+  var t=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  t.setDate(t.getDate()+4-(t.getDay()||7));
+  var y0=new Date(t.getFullYear(),0,1);
+  return Math.ceil((((t-y0)/86400000)+1)/7);
+}
+function ageFromBirthday(b, now){
+  if(!b) return null;
+  var bd=new Date(b+'T00:00:00');
+  var n=now||new Date();
+  var age=n.getFullYear()-bd.getFullYear();
+  var pre=(n.getMonth()<bd.getMonth())||(n.getMonth()===bd.getMonth()&&n.getDate()<bd.getDate());
+  if(pre) age--;
+  return age;
+}
+function bandForAge(age){
+  if(age==null) return AGE_BANDS[0];
+  if(age<=12) return AGE_BANDS[0];
+  if(age>=17) return AGE_BANDS[AGE_BANDS.length-1];
+  var hit = AGE_BANDS.find(function(b){return b.age===age;});
+  return hit || AGE_BANDS[0];
+}
+function findSection(slug){ return SECTIONS.find(function(s){return s.slug===slug;}); }
+function findActivity(key){
+  for(var i=0;i<SECTIONS.length;i++){
+    var a=SECTIONS[i].activities.find(function(x){return x.key===key;});
+    if(a) return {section:SECTIONS[i], activity:a};
+  }
+  return null;
+}
+function escapeHtml(s){return (s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+/* ============ STATE + LOCAL CACHE ============ */
+var CACHE_KEY='kenzie_compass_v1';
+var SYNC_KEY ='kenzie_compass_v1_sync';
+function loadCache(){try{return JSON.parse(localStorage.getItem(CACHE_KEY))||{}}catch(e){return{}}}
+function saveCache(){try{localStorage.setItem(CACHE_KEY,JSON.stringify(state))}catch(e){}}
+function loadSync(){try{return JSON.parse(localStorage.getItem(SYNC_KEY))||{}}catch(e){return{}}}
+function saveSync(){try{localStorage.setItem(SYNC_KEY,JSON.stringify(sync))}catch(e){}}
+
+var state = loadCache();
+state.settings = state.settings || { birthday:null };
+state.progress = state.progress || {};
+state.journal  = state.journal  || [];
+var sync = loadSync();
+sync.dirtyProgress = sync.dirtyProgress || {};
+sync.dirtySettings = !!sync.dirtySettings;
+sync.pendingJournal = sync.pendingJournal || [];
+
+/* ============ THIS WEEK'S FOCUS (deterministic rotation) ============ */
+function thisWeekFocus(now){
+  now = now || new Date();
+  var age  = ageFromBirthday(state.settings.birthday, now);
+  var band = bandForAge(age);
+  var wk   = isoWeek(now);
+  var fi   = (wk - 1) % band.focus.length;
+  var focus= band.focus[fi];
+  var pi   = Math.floor((wk - 1) / band.focus.length) % focus.promptKeys.length;
+  var key  = focus.promptKeys[pi];
+  var hit  = findActivity(key);
+  return { age:age, band:band, week:wk, focus:focus, activity: hit && hit.activity, section: hit && hit.section, itemKey:key };
+}
+
+/* ============ RENDER ============ */
+function renderAgeSub(){
+  var age = ageFromBirthday(state.settings.birthday);
+  var el = document.getElementById('agesub');
+  if(age==null){
+    el.textContent = 'A roadmap, not a checklist. Set her birthday below to anchor it.';
+    document.getElementById('setuppanel').style.display='';
+  } else {
+    var band = bandForAge(age);
+    var label = (age<12)?'pre-12 (showing age 12 plan)':(age>=17?'age 17–18':'age '+age);
+    el.innerHTML = '<b>'+label+'</b> · this year\'s focus: '+band.focus.map(function(f){return f.name;}).join(' · ');
+    document.getElementById('setuppanel').style.display='none';
+  }
+}
+
+function renderWeekFocus(){
+  var w = thisWeekFocus();
+  var meta = document.getElementById('wfmeta');
+  var topic= document.getElementById('wftopic');
+  var prompt=document.getElementById('wfprompt');
+  if(!w.activity){
+    meta.textContent = 'Set Kenzie\'s birthday';
+    topic.textContent= '—';
+    prompt.textContent='Once her birthday is set, you\'ll see one specific, ~5-minute thing to do with her this week.';
+    document.getElementById('wfmark').disabled = true;
+    document.getElementById('wfjump').disabled = true;
+    return;
+  }
+  meta.textContent  = 'Week '+w.week+' · '+w.focus.name+' · '+w.section.title;
+  topic.textContent = w.focus.name;
+  prompt.textContent= w.activity.text;
+  document.getElementById('wfmark').disabled = false;
+  document.getElementById('wfjump').disabled = false;
+  document.getElementById('wfmark').dataset.key = w.itemKey;
+  document.getElementById('wfjump').dataset.slug = w.section.slug;
+  var done = state.progress[w.itemKey] && state.progress[w.itemKey].status==='done';
+  document.getElementById('wfmark').textContent = done ? '✓ Logged — tap to undo' : '✓ Mark this conversation happened';
+}
+
+function renderSections(){
+  var root = document.getElementById('secs'); root.innerHTML='';
+  SECTIONS.forEach(function(s){
+    var totalActs = s.activities.length;
+    var doneActs  = s.activities.filter(function(a){return state.progress[a.key] && state.progress[a.key].status==='done';}).length;
+    var sec = document.createElement('div');
+    sec.className='sec'; sec.style.setProperty('--pc','var('+s.color+')');
+    sec.dataset.slug = s.slug;
+    sec.innerHTML =
+      '<div class="head">'+
+        '<span class="num">'+s.num+'</span>'+
+        '<span class="ttl">'+escapeHtml(s.title)+'<small>'+escapeHtml(s.lead)+'</small></span>'+
+        '<span class="count">'+doneActs+' / '+totalActs+'</span>'+
+        '<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'+
+      '</div>'+
+      '<div class="body">'+
+        '<ul class="lessons">'+s.lessons.map(function(l){return '<li>'+escapeHtml(l)+'</li>';}).join('')+'</ul>'+
+        '<div class="acts-header">Practical activities</div>'+
+        '<div class="acts">'+s.activities.map(function(a){
+          var d = state.progress[a.key] && state.progress[a.key].status==='done';
+          return '<div class="act'+(d?' done':'')+'" data-key="'+a.key+'">'+
+            '<span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>'+
+            '<span class="tx">'+escapeHtml(a.text)+'</span>'+
+          '</div>';
+        }).join('')+'</div>'+
+      '</div>';
+    sec.querySelector('.head').onclick = function(){ sec.classList.toggle('open'); };
+    sec.querySelectorAll('.act').forEach(function(el){
+      el.onclick = function(){ toggleProgress(el.dataset.key); };
+    });
+    root.appendChild(sec);
+  });
+}
+
+function renderTimeline(){
+  var root = document.getElementById('timeline'); root.innerHTML='';
+  var curAge = ageFromBirthday(state.settings.birthday);
+  var curBand = bandForAge(curAge);
+  AGE_BANDS.forEach(function(b){
+    var card = document.createElement('div');
+    card.className='agecard'+(b.age===curBand.age?' current':'');
+    var label = (b.age===17)?'17–18':String(b.age);
+    var ms = b.milestones.map(function(m){
+      var d = state.progress[m.key] && state.progress[m.key].status==='done';
+      return '<div class="m'+(d?' done':'')+'" data-key="'+m.key+'"><span class="dot"></span><span>'+escapeHtml(m.text)+'</span></div>';
+    }).join('');
+    card.innerHTML =
+      '<div class="age">'+label+'</div>'+
+      '<div class="focus">'+b.focus.map(function(f){return escapeHtml(f.name);}).join(' · ')+'</div>'+
+      '<div class="ms">'+ms+'</div>';
+    card.querySelectorAll('.m').forEach(function(el){
+      el.onclick=function(){ toggleProgress(el.dataset.key); };
+    });
+    root.appendChild(card);
+  });
+}
+
+function renderJournal(){
+  var sel = document.getElementById('jsection');
+  if(sel.options.length<=1){
+    SECTIONS.forEach(function(s){
+      var o=document.createElement('option'); o.value=s.slug; o.textContent=s.title; sel.appendChild(o);
+    });
+  }
+  var jd = document.getElementById('jdate');
+  if(!jd.value) jd.value = dkey();
+  var root = document.getElementById('entries'); root.innerHTML='';
+  if(!state.journal.length){
+    root.innerHTML='<div class="empty">Nothing yet. The next time you have a real moment with her, write a line.</div>';
+    return;
+  }
+  state.journal.slice().sort(function(a,b){return (b.entry_date+b.created_at).localeCompare(a.entry_date+a.created_at);}).forEach(function(e){
+    var sec = e.section ? findSection(e.section) : null;
+    var entry = document.createElement('div');
+    entry.className='entry';
+    if(sec) entry.style.setProperty('--pc','var('+sec.color+')');
+    entry.innerHTML =
+      '<div class="meta">'+
+        '<span>'+escapeHtml(e.entry_date)+'</span>'+
+        (sec?'<span class="tag">'+escapeHtml(sec.title)+'</span>':'')+
+        '<button class="del" title="delete">×</button>'+
+      '</div>'+
+      '<div class="body"></div>';
+    entry.querySelector('.body').textContent = e.body;
+    entry.querySelector('.del').onclick = function(){ deleteJournal(e.id); };
+    root.appendChild(entry);
+  });
+}
+
+function renderAll(){
+  renderAgeSub();
+  renderWeekFocus();
+  renderSections();
+  renderTimeline();
+  renderJournal();
+}
+
+/* ============ MUTATIONS ============ */
+function setBirthday(date){
+  state.settings.birthday = date || null;
+  sync.dirtySettings = true; saveCache(); saveSync();
+  renderAll(); schedulePush();
+  toast('Birthday saved.');
+}
+
+function toggleProgress(itemKey){
+  var p = state.progress[itemKey] || { status:'not_started' };
+  var nextDone = p.status !== 'done';
+  state.progress[itemKey] = {
+    status: nextDone ? 'done' : 'not_started',
+    completed_at: nextDone ? new Date().toISOString() : null,
+    notes: p.notes || null,
+    updated_at_ms: Date.now()
+  };
+  sync.dirtyProgress[itemKey] = true; saveCache(); saveSync();
+  document.querySelectorAll('[data-key="'+itemKey+'"]').forEach(function(el){
+    el.classList.toggle('done', nextDone);
+  });
+  renderSections(); renderWeekFocus();
+  schedulePush();
+}
+
+function addJournal(){
+  var d = document.getElementById('jdate').value || dkey();
+  var s = document.getElementById('jsection').value || null;
+  var body = document.getElementById('jbody').value.trim();
+  if(!body){ toast('Write something first.'); return; }
+  var entry = {
+    id: 'tmp-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),
+    entry_date: d,
+    section: s,
+    body: body,
+    created_at: new Date().toISOString()
+  };
+  state.journal.push(entry);
+  sync.pendingJournal.push({op:'insert', payload:entry});
+  saveCache(); saveSync();
+  document.getElementById('jbody').value='';
+  renderJournal();
+  schedulePush();
+  toast('Entry saved.');
+}
+
+function deleteJournal(id){
+  var idx = state.journal.findIndex(function(e){return e.id===id;});
+  if(idx<0) return;
+  state.journal.splice(idx,1);
+  if(id.indexOf('tmp-')!==0){
+    sync.pendingJournal.push({op:'delete', payload:{id:id}});
+  } else {
+    // It's still a local-only tmp entry — strip any pending insert for it.
+    sync.pendingJournal = sync.pendingJournal.filter(function(op){
+      return !(op.op==='insert' && op.payload && op.payload.id===id);
+    });
+  }
+  saveCache(); saveSync();
+  renderJournal();
+  schedulePush();
+}
+
+/* ============ UI WIRES ============ */
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(window._t);window._t=setTimeout(function(){t.classList.remove('show');},2400);}
+document.getElementById('bdaysave').onclick = function(){
+  var v = document.getElementById('bdayinput').value;
+  if(!v){ toast('Pick a date.'); return; }
+  setBirthday(v);
+};
+document.getElementById('wfmark').onclick = function(){
+  var k = this.dataset.key; if(!k) return;
+  toggleProgress(k);
+};
+document.getElementById('wfjump').onclick = function(){
+  var slug = this.dataset.slug; if(!slug) return;
+  var sec = document.querySelector('.sec[data-slug="'+slug+'"]');
+  if(sec){ sec.classList.add('open'); sec.scrollIntoView({behavior:'smooth', block:'start'}); }
+};
+document.getElementById('jsave').onclick = addJournal;
+document.getElementById('jclear').onclick = function(){
+  document.getElementById('jbody').value='';
+  document.getElementById('jsection').value='';
+  document.getElementById('jdate').value=dkey();
+};
+
+/* ============ SUPABASE SYNC ============
+   Same project, same anonymous user as Atlas (shared session via localStorage
+   keyed by Supabase project ref). If the session is missing (user landed on
+   /kenzie.html without opening Atlas first), we sign in anonymously here.
+*/
+var schedulePush = function(){}; // no-op until the sync IIFE wires it up
+(function(){
+  var SB_URL = 'https://xlvjagimbonemwijoiti.supabase.co';
+  var SB_KEY = 'sb_publishable_012wKotiKLPlnix_6GCq8A_0f3055_t';
+  var SB = (window.supabase && window.supabase.createClient)
+    ? window.supabase.createClient(SB_URL, SB_KEY, { auth:{ persistSession:true, autoRefreshToken:true } })
+    : null;
+  if(!SB){ console.warn('[kenzie-sync] supabase-js failed to load; cache-only mode.'); renderAll(); return; }
+
+  var userId = null;
+  var pushTimer = null;
+  schedulePush = function(){ clearTimeout(pushTimer); pushTimer = setTimeout(flush, 1500); };
+
+  async function flush(){
+    if(!userId || !navigator.onLine) return;
+
+    // 1) Settings (singleton upsert)
+    if(sync.dirtySettings){
+      try {
+        var resS = await SB.from('kenzie_settings').upsert(
+          { user_id:userId, birthday:state.settings.birthday || null, payload:state.settings.payload || {} },
+          { onConflict:'user_id' }
+        );
+        if(resS.error) throw resS.error;
+        sync.dirtySettings = false; saveSync();
+      } catch(err){ console.warn('[kenzie-sync] settings push failed', err); }
+    }
+
+    // 2) Progress (batched upsert)
+    var dirty = Object.keys(sync.dirtyProgress);
+    if(dirty.length){
+      var batch = dirty.slice(0,50).map(function(k){
+        var p = state.progress[k] || {};
+        return {
+          user_id:userId, item_key:k,
+          status:p.status || 'not_started',
+          notes:p.notes || null,
+          completed_at:p.completed_at || null
+        };
+      });
+      try {
+        var resP = await SB.from('kenzie_progress').upsert(batch, { onConflict:'user_id,item_key' });
+        if(resP.error) throw resP.error;
+        batch.forEach(function(b){ delete sync.dirtyProgress[b.item_key]; });
+        saveSync();
+      } catch(err){ console.warn('[kenzie-sync] progress push failed', err); }
+    }
+
+    // 3) Journal — process queued ops; on insert, swap tmp id for server-assigned id.
+    var ops = sync.pendingJournal.slice();
+    sync.pendingJournal = []; saveSync();
+    for(var i=0;i<ops.length;i++){
+      var op = ops[i];
+      try {
+        if(op.op==='insert'){
+          var pl = op.payload;
+          var resJ = await SB.from('kenzie_journal')
+            .insert({ user_id:userId, entry_date:pl.entry_date, section:pl.section, body:pl.body })
+            .select().single();
+          if(resJ.error) throw resJ.error;
+          var idx = state.journal.findIndex(function(e){return e.id===pl.id;});
+          if(idx>=0){ state.journal[idx].id = resJ.data.id; saveCache(); }
+        } else if(op.op==='delete'){
+          var resD = await SB.from('kenzie_journal').delete().eq('id', op.payload.id).eq('user_id', userId);
+          if(resD.error) throw resD.error;
+        }
+      } catch(err){
+        console.warn('[kenzie-sync] journal op failed; re-queueing', op, err);
+        sync.pendingJournal.push(op); saveSync();
+      }
+    }
+  }
+
+  async function pullAll(){
+    if(!userId) return;
+    try {
+      var [s, p, j] = await Promise.all([
+        SB.from('kenzie_settings').select('*').eq('user_id',userId).maybeSingle(),
+        SB.from('kenzie_progress').select('*').eq('user_id',userId),
+        SB.from('kenzie_journal').select('*').eq('user_id',userId).order('entry_date',{ascending:false}).limit(500)
+      ]);
+      if(s.data && !sync.dirtySettings){
+        state.settings.birthday = s.data.birthday || state.settings.birthday;
+        state.settings.payload  = s.data.payload  || state.settings.payload || {};
+      }
+      if(p.data){
+        p.data.forEach(function(row){
+          if(sync.dirtyProgress[row.item_key]) return;  // local mutation hasn't pushed yet — keep local
+          state.progress[row.item_key] = {
+            status:row.status, notes:row.notes, completed_at:row.completed_at,
+            updated_at_ms: new Date(row.updated_at).getTime()
+          };
+        });
+      }
+      if(j.data){
+        // Replace journal with cloud copy, then re-append local-only pending inserts.
+        var pendingInsertIds = sync.pendingJournal.filter(function(o){return o.op==='insert';}).map(function(o){return o.payload.id;});
+        var localPendingEntries = state.journal.filter(function(e){return pendingInsertIds.indexOf(e.id)>=0;});
+        state.journal = j.data.map(function(r){
+          return { id:r.id, entry_date:r.entry_date, section:r.section, body:r.body, created_at:r.created_at };
+        }).concat(localPendingEntries);
+      }
+      saveCache();
+      renderAll();
+    } catch(err){ console.warn('[kenzie-sync] pull failed', err); }
+  }
+
+  async function bootSync(){
+    renderAll();  // paint instantly from local cache
+    try {
+      var sess = await SB.auth.getSession();
+      var session = sess && sess.data && sess.data.session;
+      if(!session){
+        var signin = await SB.auth.signInAnonymously();
+        if(signin.error){
+          console.warn('[kenzie-sync] anon sign-in failed', signin.error);
+          return;
+        }
+        session = signin.data.session;
+      }
+      userId = session.user.id;
+      await pullAll();
+      flush();
+      window.addEventListener('online', flush);
+    } catch(err){ console.warn('[kenzie-sync] boot failed; staying cache-only.', err); }
+  }
+  bootSync();
+})();
+</script>
+</body>
+</html>
