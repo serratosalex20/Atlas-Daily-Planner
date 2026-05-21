@@ -312,6 +312,9 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Supabase JS client (UMD build — global `supabase`). Keeps drag-and-drop deploy story intact. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
 <script>
 /* ============ DATA ============ */
 var P={body:'--body',mind:'--mind',spirit:'--spirit',family:'--family',money:'--money',rest:'--rest'};
@@ -404,6 +407,13 @@ function buildRecord(c){
   var pct=total?Math.round(done/total*100):0;
   var activity=done>0||mvd>0||tt>0||(c.top3&&(c.top3.a||c.top3.b||c.top3.c));
   var rec={date:c.date,mode:c.mode,done:done,total:total,pct:pct,pillars:pillars,mvd:mvd,tasksDone:td,tasksTotal:tt,top3:c.top3,activity:!!activity};
+  // Raw inputs preserved so past days can round-trip through cloud sync.
+  // Underscored = "raw, not for display." buildRecord() always re-derives the display fields above.
+  rec._checks   = c.checks||{};
+  rec._mvd      = c.mvd||{};
+  rec._tasks    = (c.tasks||[]).slice();
+  rec._closed   = !!c.closed;
+  if(c.nextTop3) rec._nextTop3 = c.nextTop3;
   rec.insight=genInsight(rec);
   return rec;
 }
@@ -661,6 +671,205 @@ function boot(){
   renderAll();tick();setInterval(tick,30000);
 }
 boot();
+
+/* ============ SUPABASE SYNC ============
+   atlas_os_v1 is NEVER mutated by this block (other than through the existing
+   wrapped save()). All sync bookkeeping lives in a sibling localStorage key
+   (atlas_os_v1_sync) so export/import on atlas_os_v1 stays clean.
+   Conflict policy: last-write-wins per (user_id, date) by server-stamped updated_at.
+*/
+(function(){
+  var SB_URL = 'https://xlvjagimbonemwijoiti.supabase.co';
+  var SB_KEY = 'sb_publishable_012wKotiKLPlnix_6GCq8A_0f3055_t';
+  var SB = (window.supabase && window.supabase.createClient)
+    ? window.supabase.createClient(SB_URL, SB_KEY, { auth:{ persistSession:true, autoRefreshToken:true } })
+    : null;
+  if(!SB){ console.warn('[atlas-sync] supabase-js failed to load; cache-only mode.'); return; }
+
+  var SYNC_KEY = 'atlas_os_v1_sync';
+  function syncLoad(){try{return JSON.parse(localStorage.getItem(SYNC_KEY))||{}}catch(e){return{}}}
+  function syncSave(){try{localStorage.setItem(SYNC_KEY,JSON.stringify(sync))}catch(e){}}
+  var sync = syncLoad();
+  sync.localTs   = sync.localTs   || {};   // {date: epochMs} — last local edit per date
+  sync.pending   = sync.pending   || [];   // dates queued for push
+  sync.migrated  = !!sync.migrated;        // first-time bulk-upload flag
+  // sync.userId, sync.lastPulledAt — set later
+
+  /* ---- raw-payload builder: today reads from state.current; past days from history._raw fields ---- */
+  function rawDay(date){
+    if(date === dkey() && state.current){
+      var c = state.current;
+      return { mode:c.mode, checks:c.checks||{}, mvd:c.mvd||{}, tasks:c.tasks||[],
+               top3:c.top3||{a:'',b:'',c:''}, nextTop3:c.nextTop3||null, closed:!!c.closed };
+    }
+    var h = state.history[date]; if(!h) return null;
+    return { mode:h.mode, checks:h._checks||{}, mvd:h._mvd||{}, tasks:h._tasks||[],
+             top3:h.top3||{a:'',b:'',c:''}, nextTop3:h._nextTop3||null,
+             closed: (h._closed!==undefined) ? !!h._closed : true };
+  }
+
+  /* ---- write-side: wrap save() (defined above) to mark dirty + schedule debounced push ---- */
+  var _origSave = save;
+  save = function(){
+    _origSave();
+    if(state.current && state.current.date){
+      var d = state.current.date;
+      sync.localTs[d] = Date.now();
+      if(sync.pending.indexOf(d) < 0) sync.pending.push(d);
+      syncSave();
+      schedulePush();
+    }
+  };
+
+  var _pushTimer = null;
+  function schedulePush(){ clearTimeout(_pushTimer); _pushTimer = setTimeout(flushPending, 2000); }
+
+  async function flushPending(){
+    if(!sync.userId || !navigator.onLine) return;
+    var todo = sync.pending.slice();
+    sync.pending = []; syncSave();
+    for(var i=0; i<todo.length; i++){
+      var d = todo[i], p = rawDay(d);
+      if(!p){ continue; }
+      try {
+        var res = await SB.from('daily_state').upsert(
+          { user_id: sync.userId, date: d, mode: p.mode, payload: p, closed: !!p.closed },
+          { onConflict: 'user_id,date' }
+        );
+        if(res.error) throw res.error;
+      } catch(err){
+        console.warn('[atlas-sync] push failed for', d, err);
+        if(sync.pending.indexOf(d) < 0) sync.pending.push(d);
+        syncSave();
+      }
+    }
+  }
+
+  /* ---- read-side: pull rows newer than what we've seen, merge by updated_at ---- */
+  function applyRemote(row){
+    var remoteMs = new Date(row.updated_at).getTime();
+    var localMs  = sync.localTs[row.date] || 0;
+
+    // Rule (c) — closed-day ratchet. The "Lock in & rest 🌙" shutdown ritual
+    // is psychologically final, so we treat `closed` as a one-way door across
+    // devices. Closed beats open in both directions, regardless of timestamp:
+    //   • local closed, remote open  → skip (never un-close from stale device)
+    //   • local open,   remote closed → apply (let the close propagate)
+    //   • both same state            → normal last-write-wins
+    var localRec = (row.date === dkey() && state.current && state.current.date === row.date)
+                    ? state.current
+                    : state.history[row.date];
+    var localClosed  = !!(localRec && (localRec.closed || localRec._closed));
+    var remoteClosed = !!row.closed;
+    if(localClosed && !remoteClosed) return false;
+    if(!(remoteClosed && !localClosed) && remoteMs <= localMs) return false;
+
+    var p = row.payload || {};
+    if(row.date === dkey()){
+      // Today: replace the live working copy. cur and MODE are module-level in the outer scope.
+      state.current = state.current || freshDay(row.date, row.mode);
+      state.current.mode     = row.mode;
+      state.current.checks   = p.checks || {};
+      state.current.mvd      = p.mvd    || {};
+      state.current.tasks    = p.tasks  || [];
+      state.current.top3     = p.top3   || {a:'',b:'',c:''};
+      state.current.closed   = !!p.closed;
+      if(p.nextTop3) state.current.nextTop3 = p.nextTop3;
+      cur = state.current;
+      MODE = cur.mode;
+    } else {
+      // Past day: rebuild the derived snapshot from the raw payload.
+      var fake = { date:row.date, mode:row.mode,
+                   checks:p.checks||{}, mvd:p.mvd||{}, tasks:p.tasks||[],
+                   top3:p.top3||{a:'',b:'',c:''}, closed:!!p.closed, nextTop3:p.nextTop3 };
+      var rec = buildRecord(fake);
+      if(rec.activity) state.history[row.date] = rec;
+    }
+    sync.localTs[row.date] = remoteMs;
+    return true;
+  }
+
+  async function pullAndMerge(){
+    if(!sync.userId) return;
+    var since = sync.lastPulledAt ? new Date(sync.lastPulledAt - 1000).toISOString() : '1970-01-01T00:00:00Z';
+    try {
+      var res = await SB.from('daily_state').select('*').eq('user_id', sync.userId).gt('updated_at', since);
+      if(res.error) throw res.error;
+      var changed = false;
+      (res.data||[]).forEach(function(row){ if(applyRemote(row)) changed = true; });
+      sync.lastPulledAt = Date.now();
+      _origSave(); syncSave();
+      if(changed){
+        // Re-render without going through renderAll (which doesn't clear the mode-seg .on class).
+        var on = document.querySelector('#modeseg button.on');
+        if(on && on.dataset.mode !== MODE){
+          document.querySelectorAll('#modeseg button').forEach(function(b){b.classList.remove('on');});
+          var btn = document.querySelector('#modeseg button[data-mode="'+MODE+'"]'); if(btn) btn.classList.add('on');
+        }
+        renderTimeline(); renderMVD(); renderTasks(); wireTop3(); renderLog(); updateProgress();
+        toast('Synced from cloud ☁');
+      }
+    } catch(err){
+      console.warn('[atlas-sync] pull failed', err);
+    }
+  }
+
+  /* ---- one-time migration: existing history + today → cloud ---- */
+  async function migrateLocalToCloud(){
+    if(!sync.userId) return;
+    var keys = Object.keys(state.history);
+    if(state.current && state.current.date && keys.indexOf(state.current.date) < 0) keys.push(state.current.date);
+    keys = keys.sort();
+    var stamped = Date.now();
+    for(var i=0; i<keys.length; i+=20){
+      var batch = keys.slice(i, i+20).map(function(d){
+        var p = rawDay(d); if(!p) return null;
+        return { user_id: sync.userId, date: d, mode: p.mode, payload: p, closed: !!p.closed };
+      }).filter(Boolean);
+      if(!batch.length) continue;
+      try {
+        var res = await SB.from('daily_state').upsert(batch, { onConflict: 'user_id,date' });
+        if(res.error) throw res.error;
+        batch.forEach(function(r){ sync.localTs[r.date] = stamped; });
+        syncSave();
+      } catch(err){
+        console.warn('[atlas-sync] migration batch failed at', i, err);
+        return; // bail; will retry next boot (sync.migrated stays false)
+      }
+    }
+    sync.migrated = true; syncSave();
+    if(keys.length) toast('Backed up '+keys.length+' day'+(keys.length===1?'':'s')+' to cloud');
+  }
+
+  /* ---- boot: sign in (anon), pull, migrate, push anything pending ---- */
+  async function bootSync(){
+    try {
+      var sess = await SB.auth.getSession();
+      var session = sess && sess.data && sess.data.session;
+      if(!session){
+        var signin = await SB.auth.signInAnonymously();
+        if(signin.error){
+          console.warn('[atlas-sync] anon sign-in failed (is the provider enabled in dashboard?)', signin.error);
+          return;
+        }
+        session = signin.data.session;
+      }
+      sync.userId = session.user.id; syncSave();
+
+      await pullAndMerge();
+      if(!sync.migrated) await migrateLocalToCloud();
+
+      // After boot, any pending writes still in queue (e.g. from offline last session) flush now.
+      flushPending();
+      window.addEventListener('online', flushPending);
+    } catch(err){
+      console.warn('[atlas-sync] boot failed; staying cache-only.', err);
+    }
+  }
+
+  // Kick off async — never blocks first paint.
+  bootSync();
+})();
 </script>
 </body>
 </html>
