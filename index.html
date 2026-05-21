@@ -1834,6 +1834,17 @@ boot();
   // Kick off async — never blocks first paint.
   bootSync();
 })();
+
+/* ============ SERVICE WORKER REGISTRATION ============
+   Registers sw.js after first paint so it never blocks the initial render. Required
+   for the PWA "Install app" prompt on Chrome/Edge and lets us add Web Push later.
+*/
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js')
+      .catch(function(err){ console.warn('[atlas-sw] registration failed', err); });
+  });
+}
 </script>
 </body>
 </html>
