@@ -198,6 +198,26 @@
   .diag-log .lvl-error{color:var(--family)}
   .diag-log .empty{color:var(--faint);font-style:italic}
 
+  /* Account & backup — claim the anonymous identity via email + offline JSON backup.
+     Mind-teal primary (Save), neutral chips for export/import. */
+  .acct{margin-top:10px;font-size:11px;color:var(--faint)}
+  .acct summary{cursor:pointer;padding:6px 0;letter-spacing:.05em;text-transform:uppercase;font-weight:700;color:var(--muted);list-style:none}
+  .acct summary::-webkit-details-marker{display:none}
+  .acct summary::before{content:'▸ ';display:inline-block;transition:transform .15s;margin-right:2px}
+  .acct[open] summary::before{transform:rotate(90deg)}
+  .acct summary:hover{color:var(--ink)}
+  .acct-status{margin:4px 0 8px;line-height:1.55}
+  .acct-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .acct-row input{flex:1 1 160px;min-width:0;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;color:var(--ink);font:inherit;font-size:12px}
+  .acct-row input:focus{outline:none;border-color:var(--mind)}
+  .acct-save{flex:none;background:var(--mind);border:1px solid var(--mind);color:#10201e;border-radius:8px;padding:7px 12px;font:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:.15s}
+  .acct-save:active{transform:scale(.96)}
+  .acct-hint{margin:2px 0 8px;color:var(--faint)}
+  .acct-hint a{color:var(--mind);cursor:pointer;border-bottom:1px dashed var(--mind)}
+  .acct-controls{display:flex;flex-wrap:wrap;gap:6px}
+  .acct-controls button{background:var(--bg2);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:7px 10px;font:inherit;font-size:11px;cursor:pointer;transition:.15s}
+  .acct-controls button:hover{color:var(--ink);border-color:var(--mind)}
+
   /* Floor-held / Perfect-day animated badge (in the header) */
   .floor-badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;padding:5px 11px;border-radius:999px;margin-top:9px;color:#2a210f;background:var(--gold);box-shadow:0 0 0 1px rgba(233,184,114,.35),0 6px 16px -8px rgba(233,184,114,.4);opacity:0;transform:translateY(-4px) scale(.85);transition:opacity .35s ease,transform .4s cubic-bezier(.2,.9,.3,1.2);pointer-events:none;align-self:flex-start}
   .floor-badge.show{opacity:1;transform:translateY(0) scale(1)}
@@ -488,6 +508,20 @@
         <pre class="diag-log" id="nf-diag-log"><span class="empty">No events yet. Hit "Local notification" or "Send test" above.</span></pre>
       </details>
     </div>
+    <details class="acct" id="acct">
+      <summary>Account &amp; backup</summary>
+      <div class="acct-status" id="acct-state">checking…</div>
+      <div class="acct-row" id="acct-claim">
+        <input type="email" id="acct-email" placeholder="you@email.com" autocomplete="email" inputmode="email">
+        <button class="acct-save" id="acct-save">Save my account</button>
+      </div>
+      <div class="acct-hint" id="acct-signin-row">Already saved on another device? <a id="acct-signin">Sign in with email</a></div>
+      <div class="acct-controls">
+        <button id="acct-export" title="Download a JSON backup of all your Atlas data to this device.">⬇ Export backup (.json)</button>
+        <button id="acct-import" title="Restore from a previously exported backup file. Overwrites this device's data, then reloads.">⬆ Import backup</button>
+        <input type="file" id="acct-import-file" accept="application/json" hidden>
+      </div>
+    </details>
   </div>
 </div>
 
@@ -2052,8 +2086,120 @@ boot();
     }
   };
 
+  /* ---- Account: claim the anonymous identity via email so data survives a
+     cache-clear / reinstall / new device, plus cross-device magic-link sign-in.
+     CRITICAL distinction: claim() uses updateUser (keeps THIS anon user + its
+     rows, just attaches an email → permanent). signin() uses signInWithOtp with
+     shouldCreateUser:false (loads an ALREADY-saved account on a new device; a
+     typo can't mint an empty user). Mixing these up is how data gets orphaned. ---- */
+  var acctUser = null;
+  function acctValidEmail(e){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e); }
+  function renderAccount(){
+    var stateEl = document.getElementById('acct-state');
+    if(!stateEl) return;
+    var email = acctUser && acctUser.email;            // anon users have no email
+    var claimRow  = document.getElementById('acct-claim');
+    var signinRow = document.getElementById('acct-signin-row');
+    if(email){
+      stateEl.textContent = '🔒 Saved as ' + email + ' — your data is safe and syncs across devices.';
+      if(claimRow)  claimRow.style.display  = 'none';
+      if(signinRow) signinRow.style.display = 'none';
+    } else {
+      stateEl.textContent = '⚠ Guest mode — your data lives ONLY on this device. Save your account so a cache-clear or new phone can’t wipe it.';
+      if(claimRow)  claimRow.style.display  = '';
+      if(signinRow) signinRow.style.display = '';
+    }
+    var saveBtn = document.getElementById('acct-save');
+    if(saveBtn) saveBtn.onclick = function(){
+      var el = document.getElementById('acct-email');
+      window.atlasAccount.claim(((el && el.value) || '').trim());
+    };
+    var signinLink = document.getElementById('acct-signin');
+    if(signinLink) signinLink.onclick = function(){
+      var el = document.getElementById('acct-email');
+      window.atlasAccount.signin(((el && el.value) || '').trim());
+    };
+  }
+  window.atlasAccount = {
+    claim: async function(email){
+      if(!acctValidEmail(email)){ toast('Enter a valid email first.'); return; }
+      try {
+        var res = await SB.auth.updateUser({ email: email });
+        if(res.error){ toast('Could not save: ' + res.error.message); return; }
+        toast('Check ' + email + ' to confirm — that locks in your account. 🔒');
+      } catch(err){ toast('Save failed: ' + (err && err.message ? err.message : err)); }
+    },
+    signin: async function(email){
+      if(!acctValidEmail(email)){ toast('Enter the email you saved with.'); return; }
+      try {
+        var res = await SB.auth.signInWithOtp({ email: email, options: { shouldCreateUser: false, emailRedirectTo: location.origin } });
+        if(res.error){ toast('Sign-in failed: ' + res.error.message); return; }
+        toast('Magic link sent to ' + email + '. Open it on THIS device. ✉️');
+      } catch(err){ toast('Sign-in failed: ' + (err && err.message ? err.message : err)); }
+    }
+  };
+  // Keep userId + account UI in sync across every auth transition (initial load,
+  // anon sign-in, email-claim confirmation, magic-link sign-in on this device).
+  // Handler only touches local vars + DOM — no Supabase calls inside the callback.
+  try {
+    SB.auth.onAuthStateChange(function(_ev, session){
+      acctUser = session ? session.user : null;
+      if(session && session.user){ sync.userId = session.user.id; syncSave(); }
+      renderAccount();
+    });
+  } catch(_){}
+  renderAccount();
+
   // Kick off async — never blocks first paint.
   bootSync();
+})();
+
+/* ============ BACKUP (EXPORT / IMPORT) ============
+   One-tap JSON backup of every local Atlas data key, and a restore that
+   overwrites this device's copy then reloads. Pure localStorage — no network.
+   Cloud sync (the email-saved account) is the primary safety net; this offline
+   file export is the belt-and-suspenders copy you control. Overwrite-on-import
+   is gated behind a confirm() so a stale file can't silently clobber newer data. */
+(function backupPanel(){
+  var KEYS = ['atlas_os_v1','atlas_journal_v1','atlas_scheduled_tasks_v1','atlas_reflections_v1','kenzie_compass_v1'];
+  var expBtn  = document.getElementById('acct-export');
+  var impBtn  = document.getElementById('acct-import');
+  var impFile = document.getElementById('acct-import-file');
+  if(expBtn) expBtn.onclick = function(){
+    var dump = { _app: 'atlas-daily-os', _exportedAt: new Date().toISOString(), data: {} };
+    KEYS.forEach(function(k){ var v = localStorage.getItem(k); if(v != null) dump.data[k] = v; });
+    var n = Object.keys(dump.data).length;
+    if(!n){ toast('Nothing to back up yet.'); return; }
+    var blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+    var url  = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'atlas-backup-' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    toast('Backup downloaded (' + n + ' section' + (n===1?'':'s') + '). 💾');
+  };
+  if(impBtn && impFile){
+    impBtn.onclick = function(){ impFile.click(); };
+    impFile.onchange = function(){
+      var f = impFile.files && impFile.files[0];
+      impFile.value = '';                                  // allow re-importing the same file later
+      if(!f) return;
+      var rd = new FileReader();
+      rd.onload = function(){
+        var parsed;
+        try { parsed = JSON.parse(rd.result); } catch(e){ toast('That file isn’t valid JSON.'); return; }
+        var data = parsed && parsed.data;
+        if(!data || typeof data !== 'object'){ toast('Not an Atlas backup file.'); return; }
+        var keys = Object.keys(data).filter(function(k){ return KEYS.indexOf(k) >= 0; });
+        if(!keys.length){ toast('No Atlas data found in that file.'); return; }
+        if(!window.confirm('Restore ' + keys.length + ' section(s)? This OVERWRITES the data on THIS device, then reloads.')) return;
+        keys.forEach(function(k){ try { localStorage.setItem(k, data[k]); } catch(_){} });
+        toast('Restored. Reloading…');
+        setTimeout(function(){ location.reload(); }, 700);
+      };
+      rd.readAsText(f);
+    };
+  }
 })();
 
 /* ============ PUSH DIAGNOSTICS PANEL ============
