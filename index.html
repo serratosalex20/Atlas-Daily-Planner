@@ -178,6 +178,26 @@
   .notifs a.danger{color:var(--family);border-bottom-color:var(--family)}
   .notifs a.danger:hover{color:var(--ink)}
 
+  /* Push diagnostics panel — collapsed by default. Mirrors the SW ring buffer + lets
+     you fire a direct showNotification() that bypasses the push pipeline. Goal: tell
+     which layer is failing (push transport vs OS notification surface). */
+  .diag{margin-top:10px;font-size:11px;color:var(--faint)}
+  .diag summary{cursor:pointer;padding:6px 0;letter-spacing:.05em;text-transform:uppercase;font-weight:700;color:var(--muted);list-style:none}
+  .diag summary::-webkit-details-marker{display:none}
+  .diag summary::before{content:'▸ ';display:inline-block;transition:transform .15s;margin-right:2px}
+  .diag[open] summary::before{transform:rotate(90deg)}
+  .diag summary:hover{color:var(--ink)}
+  .diag-controls{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+  .diag-controls button{background:var(--bg2);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 10px;font:inherit;font-size:11px;cursor:pointer;transition:.15s;letter-spacing:.02em}
+  .diag-controls button:hover{color:var(--ink);border-color:var(--mind)}
+  .diag-controls button:active{transform:scale(.96)}
+  .diag-status{margin:4px 0 6px;color:var(--muted);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px}
+  .diag-log{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;max-height:220px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:10.5px;line-height:1.5;color:var(--muted);white-space:pre-wrap;margin:0}
+  .diag-log .lvl-info{color:var(--muted)}
+  .diag-log .lvl-warn{color:var(--gold)}
+  .diag-log .lvl-error{color:var(--family)}
+  .diag-log .empty{color:var(--faint);font-style:italic}
+
   /* Floor-held / Perfect-day animated badge (in the header) */
   .floor-badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;padding:5px 11px;border-radius:999px;margin-top:9px;color:#2a210f;background:var(--gold);box-shadow:0 0 0 1px rgba(233,184,114,.35),0 6px 16px -8px rgba(233,184,114,.4);opacity:0;transform:translateY(-4px) scale(.85);transition:opacity .35s ease,transform .4s cubic-bezier(.2,.9,.3,1.2);pointer-events:none;align-self:flex-start}
   .floor-badge.show{opacity:1;transform:translateY(0) scale(1)}
@@ -216,11 +236,16 @@
   .block.checked .bchk{background:var(--money);border-color:var(--money)}.block.checked .bchk svg{opacity:1;transform:scale(1)}
   .block.checked .ttl{text-decoration:line-through;text-decoration-color:var(--faint)}.block.checked{opacity:.62}
 
-  .addrow{display:flex;gap:9px;margin-bottom:13px}
-  .addrow input{flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;color:var(--ink);font:inherit;font-size:14px}
+  .addrow{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:13px}
+  .addrow input{flex:1;min-width:0;background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;color:var(--ink);font:inherit;font-size:14px}
   .addrow input:focus{outline:none;border-color:var(--gold);background:#241e16}
   .addrow input::placeholder{color:var(--faint)}
   .addrow button{flex:none;background:var(--gold);color:#2a210f;border:0;border-radius:11px;padding:0 18px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;transition:.16s}
+  /* Phone: text input claims its own row so date + button never get clipped. */
+  @media (max-width:540px){
+    .addrow #taskinput{flex:1 1 100%}
+    .addrow input[type=date]{flex:1 1 0;min-width:0}
+  }
   .addrow button:active{transform:scale(.96)}
   #tasklist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
   #tasklist li{display:flex;align-items:center;gap:11px;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:11px;transition:.16s}
@@ -451,6 +476,17 @@
     <div class="notifs" id="notifs">
       <span class="nf-state" id="nf-state">🔔 Notifications: checking…</span>
       <span id="nf-actions"></span>
+      <details class="diag" id="nf-diag">
+        <summary>Push diagnostics</summary>
+        <div class="diag-controls">
+          <button id="nf-diag-local" title="Fires showNotification() directly from the page — bypasses the entire push pipeline. If you SEE a popup from this, the bug is in push transport. If you DON'T, the bug is OS-level (Focus Assist, DND, browser quiet mode).">Local notification (bypass push)</button>
+          <button id="nf-diag-resub" title="Nuke local subscription state and re-subscribe from scratch. Use this when 'Send test' returns 0 devices — that usually means the localStorage flag is stale and the DB has no matching row for your current anonymous user.">Force re-subscribe</button>
+          <button id="nf-diag-perm" title="Re-check Notification.permission, SW state, and push subscription status">Refresh status</button>
+          <button id="nf-diag-clear">Clear log</button>
+        </div>
+        <div class="diag-status" id="nf-diag-status">checking…</div>
+        <pre class="diag-log" id="nf-diag-log"><span class="empty">No events yet. Hit "Local notification" or "Send test" above.</span></pre>
+      </details>
     </div>
   </div>
 </div>
@@ -497,7 +533,7 @@ var PN={body:'Body',mind:'Mind',spirit:'Spirit',family:'Family',money:'Money',re
 var PORDER=['body','mind','spirit','family','money','rest'];
 
 var weekday=[
- {s:'05:45',e:'06:00',p:'body',star:1,t:'Wake & Prime',a:'Feet on floor → <b>big glass of water + sunlight, no phone</b>. Win the first 5 minutes.'},
+ {s:'05:45',e:'06:00',p:'body',star:1,t:'Wake & Prime',a:'Feet on floor → <b>big glass of water + sunlight, no phone</b>. Win the first 5 minutes. <b>Read your identity statement out loud</b> (printed — keep the phone down).'},
  {s:'06:00',e:'06:20',p:'spirit',star:1,t:'Stillness',a:'After water → <b>10 min meditation / breathwork</b> (or drums). Regulate before you activate.'},
  {s:'06:20',e:'07:10',p:'family',t:'Kenzie — Morning',a:'Breakfast, get her ready. Be <b>present</b>. Phone stays down.'},
  {s:'07:10',e:'07:50',p:'rest',t:'School Run',a:'Transition window. Audio learning or quiet. Don\'t check email at the light.'},
@@ -513,13 +549,13 @@ var weekday=[
  {s:'18:00',e:'19:00',p:'family',t:'Dinner Together',a:'Eat as a family. No phones at the table.'},
  {s:'19:00',e:'20:00',p:'mind',t:'Learning / Flex',a:'Read, course, or skill (20–40 min). Out of gas? It becomes rest. <b>No guilt.</b>'},
  {s:'20:00',e:'20:45',p:'family',t:'Kenzie Wind-Down',a:'Slow down together — talk, read, connect.'},
- {s:'20:45',e:'21:15',p:'spirit',t:'Quiet / Shadow Work',a:'<b>Journal 5 min.</b> Reflection / shadow work. Turn the day into meaning.'},
+ {s:'20:45',e:'21:15',p:'spirit',t:'Quiet / Shadow Work + Video Journal',a:'<b>Record tonight\'s video journal</b> (speak it out loud), then write it down. Reflection / shadow work — turn the day into meaning.'},
  {s:'21:15',e:'21:40',p:'rest',star:1,t:'Shutdown',a:'<b>Set tomorrow\'s Top 3.</b> Tidy one surface. Lay tomorrow out.'},
- {s:'21:40',e:'22:00',p:'rest',t:'Power Down',a:'Screens off. Dim the lights. Let the nervous system land.'},
+ {s:'21:40',e:'22:00',p:'rest',t:'Power Down',a:'<b>Read your identity statement out loud</b> one last time. Screens off, dim the lights, let the nervous system land.'},
  {s:'22:00',e:'23:59',p:'body',star:1,t:'Sleep',a:'~7.75 hrs. <b>Sleep is the performance drug.</b> Protect it like money.'},
 ];
 var weekend=[
- {s:'07:00',e:'07:20',p:'body',star:1,t:'Wake & Prime',a:'Water + sunlight, no phone. Easy start, same anchor.'},
+ {s:'07:00',e:'07:20',p:'body',star:1,t:'Wake & Prime',a:'Water + sunlight, no phone. Easy start, same anchor. <b>Read your identity statement out loud.</b>'},
  {s:'07:20',e:'07:45',p:'spirit',star:1,t:'Stillness',a:'Meditation / breath / drums. Longer if it feels good.'},
  {s:'07:45',e:'08:45',p:'body',star:1,t:'Move',a:'Longer or funner session — or get active <b>with Kenzie</b>.'},
  {s:'08:45',e:'09:30',p:'family',t:'Slow Breakfast',a:'No rush. Cook something together.'},
@@ -531,8 +567,8 @@ var weekend=[
  {s:'17:30',e:'18:00',p:'rest',t:'Weekly Review (Sun)',a:'Sunday: <b>review the week, set next week\'s 3 big rocks.</b>'},
  {s:'18:00',e:'19:30',p:'family',t:'Dinner & Downtime',a:'Family meal, slow evening.'},
  {s:'19:30',e:'20:30',p:'family',t:'Connection / Play',a:'Game, movie, talk. Be in it.'},
- {s:'20:30',e:'21:00',p:'spirit',t:'Quiet / Journal',a:'Reflect. Shadow work. Name three real gratitudes.'},
- {s:'21:30',e:'23:59',p:'body',star:1,t:'Wind Down → Sleep',a:'Screens off. Protect the reset.'},
+ {s:'20:30',e:'21:00',p:'spirit',t:'Quiet / Journal + Video',a:'<b>Record your video journal</b>, then reflect in writing. Shadow work. Name three real gratitudes.'},
+ {s:'21:30',e:'23:59',p:'body',star:1,t:'Wind Down → Sleep',a:'<b>Read your identity statement out loud</b> one last time. Screens off. Protect the reset.'},
 ];
 var MVD=[
  {t:'10-min stillness',s:'Meditation or breathwork. Regulate the system.'},
@@ -1912,22 +1948,33 @@ boot();
   }
 
   window.atlasPush.subscribe = async function(){
-    if(!sync.userId){ toast('Sign-in not ready. Try again in a moment.'); return; }
-    if(!('serviceWorker' in navigator) || !('PushManager' in window)){ toast('Push not supported here.'); return; }
+    // Local diag helper — no-ops if the diag panel hasn't loaded yet.
+    function D(level, msg, data){ try { if(window.atlasDiag) window.atlasDiag(level, msg, data); } catch(_){} }
+    D('info', 'subscribe: start', { hasUserId: !!sync.userId, uid8: sync.userId && sync.userId.slice(0,8) });
+    if(!sync.userId){ D('error', 'subscribe: no user id (anon sign-in not finished)'); toast('Sign-in not ready. Try again in a moment.'); return; }
+    if(!('serviceWorker' in navigator) || !('PushManager' in window)){ D('error', 'subscribe: SW/PushManager unsupported'); toast('Push not supported here.'); return; }
     try {
+      D('info', 'subscribe: requesting permission', { current: (typeof Notification!=='undefined')?Notification.permission:'n/a' });
       var perm = await Notification.requestPermission();
+      D('info', 'subscribe: permission result', { perm: perm });
       if(perm !== 'granted'){ toast('Permission not granted.'); renderNotifs(); return; }
 
       var reg = await navigator.serviceWorker.ready;
+      D('info', 'subscribe: SW ready', { active: !!reg.active });
       var existing = await reg.pushManager.getSubscription();
+      D('info', 'subscribe: getSubscription', { hasExisting: !!existing });
       var subscription = existing || await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
       });
+      var subHost = '';
+      try { subHost = new URL(subscription.endpoint).host; } catch(_){}
+      D('info', 'subscribe: have subscription', { fresh: !existing, host: subHost });
 
       var p256dh = arrayBufferToB64Url(subscription.getKey('p256dh'));
       var auth   = arrayBufferToB64Url(subscription.getKey('auth'));
 
+      D('info', 'subscribe: upserting row', { uid8: sync.userId.slice(0,8), host: subHost });
       var res = await SB.from('atlas_push_subscriptions').upsert({
         user_id:    sync.userId,
         endpoint:   subscription.endpoint,
@@ -1936,12 +1983,20 @@ boot();
         user_agent: (navigator.userAgent || '').slice(0,300)
       }, { onConflict: 'user_id,endpoint' });
 
-      if(res.error){ toast('Subscribe failed: ' + res.error.message); console.error('[atlas-push]', res.error); return; }
+      if(res.error){
+        D('error', 'subscribe: upsert failed', { code: res.error.code, msg: res.error.message, hint: res.error.hint });
+        toast('Subscribe failed: ' + res.error.message);
+        console.error('[atlas-push]', res.error);
+        return;
+      }
+      D('info', 'subscribe: upsert ok');
 
       try { localStorage.setItem('atlas_push_subscribed', '1'); } catch(_){}
+      D('info', 'subscribe: done — local flag set');
       toast('Notifications enabled on this device. 🔔');
       renderNotifs();
     } catch(err){
+      D('error', 'subscribe: threw', { err: String(err), name: err && err.name });
       console.error('[atlas-push] subscribe error', err);
       toast('Subscribe failed: ' + (err && err.message ? err.message : err));
     }
@@ -1999,6 +2054,209 @@ boot();
 
   // Kick off async — never blocks first paint.
   bootSync();
+})();
+
+/* ============ PUSH DIAGNOSTICS PANEL ============
+   Mirrors the SW ring buffer into the UI and provides a "local showNotification()"
+   button that bypasses the push transport entirely. Use it to isolate which layer
+   is failing when a test push goes silent on mobile:
+     • Local button shows popup  → bug is in push transport (FCM / Edge Fn / VAPID)
+     • Local button silent too   → bug is OS-level (Focus Assist / DND / browser quiet)
+   Render path uses textContent + createElement (no innerHTML) so SW-relayed payloads
+   can't inject markup even though everything is same-origin already.
+*/
+(function diagPanel(){
+  var logEl    = document.getElementById('nf-diag-log');
+  var statusEl = document.getElementById('nf-diag-status');
+  var localBtn = document.getElementById('nf-diag-local');
+  var permBtn  = document.getElementById('nf-diag-perm');
+  var clearBtn = document.getElementById('nf-diag-clear');
+  if(!logEl || !statusEl) return;
+
+  var entries = [];
+
+  function fmtTime(t){
+    var d = new Date(t);
+    return d.toLocaleTimeString(undefined,{hour12:false}) + '.' + String(d.getMilliseconds()).padStart(3,'0');
+  }
+  function fmtData(d){
+    if(!d) return '';
+    try { return ' · ' + JSON.stringify(d); } catch(e){ return ' · [unserializable]'; }
+  }
+
+  function render(){
+    logEl.textContent = '';
+    if(entries.length === 0){
+      var em = document.createElement('span');
+      em.className = 'empty';
+      em.textContent = 'No events yet. Hit "Local notification" or "Send test" above.';
+      logEl.appendChild(em);
+      return;
+    }
+    for(var i = 0; i < entries.length; i++){
+      var e = entries[i];
+      if(i > 0) logEl.appendChild(document.createTextNode('\n'));
+      var span = document.createElement('span');
+      span.className = 'lvl-' + e.level;
+      span.textContent = '[' + fmtTime(e.t) + '] ' + e.level.toUpperCase() + ' ' + e.msg + fmtData(e.data);
+      logEl.appendChild(span);
+    }
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function push(entry){
+    entries.push(entry);
+    if(entries.length > 120) entries.shift();
+    render();
+  }
+  function pushLocal(level, msg, data){
+    push({ t: Date.now(), level: level, msg: '[page] ' + msg, data: data || null });
+  }
+
+  // === Live SW message channel ===
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.addEventListener('message', function(ev){
+      var d = ev.data || {};
+      if(d.kind === 'sw-log' && d.entry){
+        push(d.entry);
+      } else if(d.kind === 'sw-log-snapshot' && Array.isArray(d.log)){
+        d.log.forEach(push);
+      } else if(d.kind === 'sw-log-cleared'){
+        entries = []; render();
+        pushLocal('info', 'sw log cleared');
+      }
+    });
+    // Request the prior buffer once the SW is ready (covers reloads).
+    navigator.serviceWorker.ready.then(function(reg){
+      if(reg && reg.active){ try { reg.active.postMessage({ kind:'get-sw-log' }); } catch(_){} }
+    }).catch(function(){});
+  }
+
+  // === Status line ===
+  function refreshStatus(){
+    var parts = [];
+    parts.push('perm: ' + ((typeof Notification !== 'undefined') ? Notification.permission : 'n/a'));
+    parts.push('vis: ' + (typeof document !== 'undefined' && 'visibilityState' in document ? document.visibilityState : '?'));
+    if(!('serviceWorker' in navigator)){
+      parts.push('sw: unsupported');
+      statusEl.textContent = parts.join(' · ');
+      return;
+    }
+    navigator.serviceWorker.getRegistration().then(function(reg){
+      if(!reg){ parts.push('sw: none'); statusEl.textContent = parts.join(' · '); return; }
+      var state = reg.active ? 'active' : (reg.installing ? 'installing' : (reg.waiting ? 'waiting' : 'unknown'));
+      parts.push('sw: ' + state);
+      reg.pushManager.getSubscription().then(function(sub){
+        parts.push('sub: ' + (sub ? 'yes' : 'no'));
+        if(sub && sub.endpoint){
+          // Endpoint host tells us which push service is in play (fcm.googleapis.com /
+          // updates.push.services.mozilla.com / web.push.apple.com).
+          try { parts.push('via: ' + new URL(sub.endpoint).host); } catch(_){}
+        }
+        statusEl.textContent = parts.join(' · ');
+      }).catch(function(err){
+        parts.push('sub: err(' + (err && err.message || err) + ')');
+        statusEl.textContent = parts.join(' · ');
+      });
+    });
+  }
+  refreshStatus();
+  document.addEventListener('visibilitychange', refreshStatus);
+
+  // === Buttons ===
+  if(localBtn){
+    localBtn.onclick = async function(){
+      pushLocal('info', 'local-test: clicked');
+      try {
+        if(typeof Notification === 'undefined'){ pushLocal('error', 'local-test: Notification API missing'); return; }
+        if(Notification.permission === 'default'){
+          pushLocal('warn', 'local-test: asking for permission');
+          var p = await Notification.requestPermission();
+          pushLocal('info', 'local-test: permission result', { perm: p });
+          if(p !== 'granted'){ return; }
+        }
+        if(Notification.permission !== 'granted'){
+          pushLocal('error', 'local-test: permission not granted', { perm: Notification.permission });
+          return;
+        }
+        if(!('serviceWorker' in navigator)){ pushLocal('error', 'local-test: serviceWorker unsupported'); return; }
+        var reg = await navigator.serviceWorker.ready;
+        pushLocal('info', 'local-test: reg.ready', { active: !!reg.active });
+        await reg.showNotification('Atlas — Local diagnostic 🛠️', {
+          body: 'Direct showNotification() — no push service involved.',
+          icon: 'icon-192.png',
+          badge: 'icon-192.png',
+          tag: 'atlas-test-local',
+          requireInteraction: true,
+          vibrate: [120, 60, 120],
+          silent: false,
+        });
+        pushLocal('info', 'local-test: showNotification resolved');
+        var got = await reg.getNotifications({ tag: 'atlas-test-local' });
+        pushLocal(got.length ? 'info' : 'warn', 'local-test: verify-after-show', { count: got.length });
+        if(!got.length){
+          pushLocal('warn', 'local-test: 0 notifications visible — OS (Focus Assist/DND) is suppressing');
+        }
+      } catch(err){
+        pushLocal('error', 'local-test: threw', { err: String(err), name: err && err.name });
+      }
+    };
+  }
+  if(permBtn) permBtn.onclick = function(){ refreshStatus(); pushLocal('info', 'status refreshed'); };
+  if(clearBtn) clearBtn.onclick = function(){
+    entries = []; render();
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.ready.then(function(reg){
+        if(reg && reg.active){ try { reg.active.postMessage({ kind:'clear-sw-log' }); } catch(_){} }
+      });
+    }
+  };
+
+  // Force re-subscribe: tears down the local PushSubscription + localStorage flag,
+  // then re-runs window.atlasPush.subscribe(). Each step is logged so we can see
+  // where it fails if it does (e.g. "subscribe: no user id" → anon auth not done).
+  var resubBtn = document.getElementById('nf-diag-resub');
+  if(resubBtn){
+    resubBtn.onclick = async function(){
+      pushLocal('info', 'force-resub: clicked');
+      try {
+        if(!('serviceWorker' in navigator)){ pushLocal('error', 'force-resub: serviceWorker unsupported'); return; }
+        var reg = await navigator.serviceWorker.ready;
+        var existing = await reg.pushManager.getSubscription();
+        if(existing){
+          try {
+            var hostPart = '';
+            try { hostPart = new URL(existing.endpoint).host; } catch(_){}
+            pushLocal('info', 'force-resub: existing subscription', { host: hostPart });
+            var ok = await existing.unsubscribe();
+            pushLocal('info', 'force-resub: unsubscribed', { ok: ok });
+          } catch(uerr){
+            pushLocal('warn', 'force-resub: unsubscribe threw (continuing)', { err: String(uerr) });
+          }
+        } else {
+          pushLocal('info', 'force-resub: no existing PushSubscription on this device');
+        }
+        try { localStorage.removeItem('atlas_push_subscribed'); pushLocal('info', 'force-resub: cleared local flag'); } catch(_){}
+
+        if(!(window.atlasPush && typeof window.atlasPush.subscribe === 'function')){
+          pushLocal('error', 'force-resub: window.atlasPush.subscribe not available — sync IIFE may not have run yet');
+          return;
+        }
+        pushLocal('info', 'force-resub: calling subscribe()');
+        await window.atlasPush.subscribe();
+        pushLocal('info', 'force-resub: subscribe() returned');
+
+        if(typeof renderNotifs === 'function'){ renderNotifs(); }
+        refreshStatus();
+      } catch(err){
+        pushLocal('error', 'force-resub: threw', { err: String(err), name: err && err.name });
+      }
+    };
+  }
+
+  // Public helper so subscribe()/sendTest()/disable() can log into this panel
+  // without each touching the DOM directly. Defined last so all locals are in scope.
+  try { window.atlasDiag = function(level, msg, data){ pushLocal(level, msg, data); }; } catch(_){}
 })();
 
 /* ============ SERVICE WORKER REGISTRATION ============
