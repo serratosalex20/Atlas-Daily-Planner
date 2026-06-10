@@ -125,6 +125,14 @@
   .lu-name{font-family:'Fraunces',serif;font-weight:700;font-size:36px;background:linear-gradient(90deg,var(--purple),var(--coral),var(--gold));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin:0 0 6px}
   .lu-lvl{color:var(--muted);font-size:14px}
   .lu-tap{color:var(--faint);font-size:12px;margin-top:24px}
+  /* Anime quote pop (every 5 affirmations) */
+  .quotepop{position:fixed;inset:0;background:rgba(22,19,14,.85);display:none;place-items:center;z-index:68;padding:28px;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+  .quotepop.show{display:grid;animation:lufade .3s ease}
+  .qp-card{max-width:360px;background:linear-gradient(160deg,rgba(167,139,250,.18),rgba(240,114,106,.12));border:1px solid rgba(240,114,106,.35);border-radius:20px;padding:26px 22px;text-align:center;animation:lupop .5s cubic-bezier(.2,1.35,.4,1)}
+  .qp-show{font-size:36px;line-height:1;margin-bottom:10px}
+  .qp-text{font-family:'Fraunces',serif;font-weight:600;font-size:21px;line-height:1.4;color:var(--ink);margin:0 0 14px}
+  .qp-char{font-size:13px;font-weight:700;color:var(--gold)}
+  .qp-tap{color:var(--faint);font-size:11px;margin-top:16px}
 
   /* Printable weekly fridge sheet — hidden on screen, shown only when printing */
   .printsheet{display:none}
@@ -245,6 +253,14 @@
   <div class="lu-name" id="lu-name">Glow</div>
   <div class="lu-lvl" id="lu-lvl">Level 2</div>
   <div class="lu-tap">tap to close</div>
+</div></div>
+
+<!-- Anime quote pop (every 5 affirmations) -->
+<div class="quotepop" id="quotepop"><div class="qp-card">
+  <div class="qp-show" id="q-show">💥</div>
+  <div class="qp-text" id="q-text"></div>
+  <div class="qp-char" id="q-char"></div>
+  <div class="qp-tap">tap to close</div>
 </div></div>
 
 <div class="toast" id="toast"></div>
@@ -382,6 +398,7 @@ function tapAffirm(sess,el){
   var t=affirmToday(); var was=(t[sess]||0)>=S.affirmGoal;
   t[sess]=(t[sess]||0)+1; save(); renderAffirm(); renderGame();
   if(el) celebrateAt(el);
+  if(t[sess]%5===0) showAnimeQuote();
   if(!was && t[sess]>=S.affirmGoal){ toast((sess==='am'?'☀️ Morning':'🌙 Night')+' affirmations done! 🌟 So proud of you!'); }
 }
 function renderAffirm(){
@@ -495,6 +512,30 @@ function renderGame(){
   else if(st<3 && S.streakSeen!==0){S.streakSeen=0;save();}
 }
 
+/* ---- anime quotes: pops every 5th affirmation rep ---- */
+var ANIME_QUOTES = [
+  {s:'💥',q:'Go beyond! Plus Ultra!',c:'All Might · My Hero Academia'},
+  {s:'💥',q:'I want to be a hero who saves people with a smile.',c:'Izuku Midoriya · My Hero Academia'},
+  {s:'💥',q:'If you wanna be a hero, you have to push beyond your limits.',c:'All Might · My Hero Academia'},
+  {s:'💥',q:'It\'s not about whether you can. It\'s about whether you will.',c:'Shoto-style · My Hero Academia'},
+  {s:'🔥',q:'Set your heart ablaze.',c:'Kyojuro Rengoku · Demon Slayer'},
+  {s:'🔥',q:'No matter how hard it gets, never lose sight of your goal.',c:'Tanjiro Kamado · Demon Slayer'},
+  {s:'🔥',q:'Keep moving forward — no matter what.',c:'Tanjiro Kamado · Demon Slayer'},
+  {s:'🔥',q:'The bonds you build today make you stronger tomorrow.',c:'Demon Slayer'},
+  {s:'🍥',q:'If you don\'t like your destiny, have the courage to change it!',c:'Naruto Uzumaki · Naruto'},
+  {s:'🍥',q:'I never go back on my word — that\'s my ninja way!',c:'Naruto Uzumaki · Naruto'},
+  {s:'🍥',q:'A dropout can beat a genius through hard work.',c:'Rock Lee · Naruto'},
+  {s:'🍥',q:'When you protect something precious, you become as strong as you need to be.',c:'Naruto Uzumaki · Naruto'}
+];
+function showAnimeQuote(){
+  var x=ANIME_QUOTES[Math.floor(Math.random()*ANIME_QUOTES.length)];
+  document.getElementById('q-show').textContent=x.s;
+  document.getElementById('q-text').textContent='“'+x.q+'”';
+  document.getElementById('q-char').textContent='— '+x.c;
+  var o=document.getElementById('quotepop'); o.classList.add('show');
+  clearTimeout(window._qp); window._qp=setTimeout(function(){o.classList.remove('show');},5200);
+}
+
 /* ---- wires ---- */
 var jd=document.getElementById('jdate'); if(jd&&!jd.value) jd.value=dkey();
 document.getElementById('jsave').onclick=function(){
@@ -515,6 +556,7 @@ document.getElementById('afm-addbtn').onclick=function(){
 };
 
 document.getElementById('levelup').onclick=function(){this.classList.remove('show');};
+document.getElementById('quotepop').onclick=function(){this.classList.remove('show');};
 renderHabits(); renderAffirm(); renderSuperpower(); renderJournal(); buildPrintSheet(); renderGame();
 </script>
 </body>
