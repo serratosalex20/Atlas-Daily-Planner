@@ -2,7 +2,7 @@
   "name": "Kenzie Compass",
   "short_name": "Compass",
   "description": "Kenzie's growth compass — daily habits, values, and her journey.",
-  "start_url": "kenzie.html",
+  "start_url": "kenzie-kid.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#16130E",

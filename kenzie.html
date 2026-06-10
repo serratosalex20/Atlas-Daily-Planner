@@ -9,9 +9,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Compass">
-<link rel="manifest" href="kenzie-manifest.json">
-<link rel="apple-touch-icon" href="kenzie-apple-touch.png">
-<link rel="icon" href="kenzie-icon-192.png">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -223,20 +223,11 @@
     </div>
   </div>
 
-  <!-- Daily Habits (Good Habits & Values Workbook) -->
-  <div class="panel habits" id="habitspanel">
-    <h2>Today's Habits</h2>
-    <p class="lead">Check these off every day, Kenzie. Small things done daily make you strong, happy, and unstoppable. 💪</p>
-    <div class="hb-date" id="hb-date"></div>
-    <ul class="hb-list" id="hb-list"></ul>
-    <div class="hb-points" id="hb-points"></div>
-    <div class="hb-values">
-      <h3>💎 Live by these</h3>
-      <div class="hb-vals" id="hb-vals"></div>
-    </div>
-    <div class="hb-actions">
-      <button class="btn ghost" id="hb-print">🖨️ Print weekly fridge sheet</button>
-    </div>
+  <!-- Kenzie's own version -->
+  <div class="panel">
+    <h2>Kenzie's version</h2>
+    <p class="lead">She has her own Compass that speaks to <em>her</em> — daily habits, a weekly superpower, and a private journal that stays on her phone. She installs it on her iPhone and taps <b>"Send my progress to Dad"</b> to email you her habit summary (points, days, today's count) — <b>never her journal</b>.</p>
+    <a class="btn ghost" href="kenzie-kid.html" style="display:inline-block;text-decoration:none">📱 Open Kenzie's version →</a>
   </div>
 
   <!-- The Eight -->
@@ -274,30 +265,6 @@
   <div class="footnote">
     Built by Atlas for Alex, in service of Kenzie.<br>
     <b>A compass, not a checklist. Return to it. Don't finish it.</b>
-  </div>
-</div>
-
-<!-- Printable one-page weekly habits sheet (fridge-ready). Hidden on screen; fills the page when printing. -->
-<div class="printsheet" id="printsheet">
-  <h1>🌟 Kenzie's Good Habits — Week of ______________</h1>
-  <p class="ps-sub">Check a box each day you do it. Small habits, every day, build a strong and happy you. 💪</p>
-  <table class="ps-grid">
-    <thead><tr><th>Habit</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr></thead>
-    <tbody id="ps-rows"></tbody>
-  </table>
-  <div class="ps-cols">
-    <div>
-      <h2>💎 Live by these</h2>
-      <ul id="ps-values"></ul>
-      <h2>🎁 Rewards</h2>
-      <ul><li>10 points = 🍦 small treat (ice cream, movie night)</li><li>20 points = 🎉 special reward (pick a family activity)</li><li>30 points = 🏆 big reward (day trip / special experience)</li></ul>
-    </div>
-    <div>
-      <h2>🌟 Weekly reflection</h2>
-      <p>What went really well this week?</p><div class="ps-line"></div><div class="ps-line"></div>
-      <p>What did I learn?</p><div class="ps-line"></div>
-      <p>How did I show kindness, courage, or responsibility?</p><div class="ps-line"></div>
-    </div>
   </div>
 </div>
 

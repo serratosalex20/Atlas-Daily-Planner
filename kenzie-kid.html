@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Kenzie's Compass</title>
+<meta name="theme-color" content="#16130E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Compass">
+<link rel="manifest" href="kenzie-manifest.json">
+<link rel="apple-touch-icon" href="kenzie-apple-touch.png">
+<link rel="icon" href="kenzie-icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#16130E;--bg2:#1E1A13;--ink:#F3ECDD;--muted:#A89E8B;--faint:#6E6553;
+    --line:rgba(243,236,221,.10);--card:#211C15;--gold:#E9B872;--coral:#F0726A;--green:#8FC56B;--teal:#52B7AC;--purple:#A78BFA;
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5}
+  .wrap{max-width:560px;margin:0 auto;padding:26px 18px 60px}
+  .hero{text-align:center;margin-bottom:22px}
+  .hero .mark{font-size:40px;line-height:1}
+  .hero h1{font-family:'Fraunces',serif;font-weight:700;font-size:30px;margin:8px 0 4px;color:var(--gold)}
+  .hero p{margin:0;color:var(--muted);font-size:15px}
+  .panel{background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius);padding:18px 17px;margin-bottom:16px;box-shadow:0 10px 30px -16px rgba(0,0,0,.6)}
+  .panel h2{font-family:'Fraunces',serif;font-weight:600;font-size:21px;margin:0 0 4px}
+  .panel .lead{margin:0 0 14px;color:var(--muted);font-size:14px}
+  .hb-date{font-size:13px;color:var(--muted);margin:-2px 0 12px;font-weight:600}
+  .hb-list{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px}
+  .hb-item{display:flex;align-items:center;gap:12px;padding:13px;background:var(--card);border:1px solid var(--line);border-radius:14px;cursor:pointer;transition:.15s;user-select:none}
+  .hb-item:active{transform:scale(.99)}
+  .hb-item.done{background:rgba(143,197,107,.12);border-color:rgba(143,197,107,.45)}
+  .hb-box{flex:none;width:28px;height:28px;border-radius:9px;border:2px solid var(--line);display:grid;place-items:center;font-size:16px;font-weight:800;color:var(--green);transition:.15s}
+  .hb-item.done .hb-box{background:var(--green);border-color:var(--green);color:#16130E}
+  .hb-emoji{flex:none;font-size:21px;line-height:1}
+  .hb-tx{font-size:15px;line-height:1.3;color:var(--ink)}
+  .hb-item.done .hb-tx{color:var(--muted)}
+  .hb-points{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:14px}
+  .hb-ptline{font-size:15px;font-weight:700;margin-bottom:9px}
+  .hb-ladder{display:flex;flex-wrap:wrap;gap:7px}
+  .hb-tier{font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--bg2);border:1px solid var(--line);color:var(--muted)}
+  .hb-tier.hit{background:var(--gold);border-color:var(--gold);color:#2a210f}
+  .sp{background:linear-gradient(160deg,rgba(167,139,250,.14),rgba(82,183,172,.07));border-color:rgba(167,139,250,.3)}
+  .sp .sp-name{font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:var(--purple);margin:2px 0 6px}
+  .sp .sp-desc{font-size:15px;margin:0 0 12px}
+  .sp .sp-try{font-size:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+  .sp .sp-try b{color:var(--gold)}
+  .jrow{display:flex;gap:8px;margin-bottom:8px}
+  .jrow input[type=date]{flex:none;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 11px;color:var(--ink);font:inherit;font-size:13px;color-scheme:dark}
+  textarea{width:100%;min-height:90px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px;color:var(--ink);font:inherit;font-size:15px;resize:vertical}
+  textarea:focus{outline:none;border-color:var(--coral)}
+  .private-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--coral);background:rgba(240,114,106,.10);border:1px solid rgba(240,114,106,.3);border-radius:999px;padding:5px 11px;margin-bottom:10px}
+  .btn{background:var(--gold);color:#2a210f;border:0;border-radius:13px;padding:13px 18px;font:inherit;font-weight:700;font-size:15px;cursor:pointer;transition:.15s}
+  .btn:active{transform:scale(.97)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .btn.full{width:100%}
+  .btn.share{background:var(--coral);color:#2a1310;margin-top:4px}
+  .saverow{display:flex;gap:9px;justify-content:flex-end;margin-top:10px}
+  .entries{margin-top:14px;display:grid;gap:9px}
+  .entry{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 13px}
+  .entry .meta{font-size:11px;color:var(--faint);margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+  .entry .meta .del{background:none;border:0;color:var(--faint);cursor:pointer;font-size:17px;line-height:1}
+  .entry .body{font-size:14.5px;white-space:pre-wrap}
+  .empty{color:var(--faint);font-size:13px;font-style:italic;padding:4px 2px}
+  .footnote{text-align:center;color:var(--faint);font-size:13px;margin-top:8px;line-height:1.7}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#2A2218;color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:11px 18px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:50;box-shadow:0 12px 30px -10px rgba(0,0,0,.7)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* Printable weekly fridge sheet — hidden on screen, shown only when printing */
+  .printsheet{display:none}
+  @media print{
+    body{background:#fff!important;color:#000!important}
+    body>*:not(.printsheet){display:none!important}
+    .printsheet{display:block!important;padding:0 6px;font-family:Georgia,serif;color:#111}
+    .printsheet h1{font-size:21px;margin:0 0 4px;text-align:center}
+    .printsheet .ps-sub{text-align:center;font-size:12px;color:#444;margin:0 0 16px}
+    .ps-grid{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:12px}
+    .ps-grid th,.ps-grid td{border:1px solid #333;padding:7px 6px;text-align:center}
+    .ps-grid th:first-child,.ps-grid td:first-child{text-align:left;width:44%}
+    .ps-grid thead th{background:#efefef}
+    .ps-grid td.box{height:22px}
+    .ps-cols{display:flex;gap:26px}.ps-cols>div{flex:1}
+    .ps-cols h2{font-size:14px;margin:0 0 6px;border-bottom:1px solid #999;padding-bottom:3px}
+    .ps-cols ul{margin:0 0 14px;padding-left:18px;font-size:12.5px;line-height:1.7}
+    .ps-cols p{margin:8px 0 2px;font-size:12.5px}.ps-line{border-bottom:1px solid #aaa;height:18px;margin:2px 0 8px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="mark">🧭</div>
+    <h1>Kenzie's Compass</h1>
+    <p>Your space, Kenzie. Small habits → big you. 💛</p>
+  </div>
+
+  <!-- Today's Habits -->
+  <div class="panel">
+    <h2>Today's Habits</h2>
+    <p class="lead">Tap each one when you do it. You've got this. 💪</p>
+    <div class="hb-date" id="hb-date"></div>
+    <ul class="hb-list" id="hb-list"></ul>
+    <div class="hb-points" id="hb-points"></div>
+    <button class="btn ghost full" id="hb-print">🖨️ Print my weekly sheet</button>
+  </div>
+
+  <!-- This week's superpower (value) -->
+  <div class="panel sp">
+    <h2>⭐ This week's superpower</h2>
+    <div class="sp-name" id="sp-name">—</div>
+    <p class="sp-desc" id="sp-desc"></p>
+    <div class="sp-try" id="sp-try"></div>
+  </div>
+
+  <!-- Private journal -->
+  <div class="panel">
+    <h2>My Journal</h2>
+    <span class="private-tag">🔒 Just for you — Dad can't see this</span>
+    <p class="lead">How was your day? What are you proud of? What's on your mind? Write it here — it stays on your phone.</p>
+    <div class="jrow"><input type="date" id="jdate"></div>
+    <textarea id="jbody" placeholder="Today I…"></textarea>
+    <div class="saverow">
+      <button class="btn ghost" id="jclear">Clear</button>
+      <button class="btn" id="jsave">Save</button>
+    </div>
+    <div class="entries" id="entries"></div>
+  </div>
+
+  <!-- Share with Dad -->
+  <div class="panel">
+    <h2>📤 Share with Dad</h2>
+    <p class="lead">Send Dad a peek at how your habits are going this week. It only sends your habit progress — <b>never your journal.</b></p>
+    <button class="btn share full" id="share">📤 Send my progress to Dad</button>
+  </div>
+
+  <div class="footnote">Your compass. Check in, don't stress. 🌟</div>
+</div>
+
+<!-- Printable weekly fridge sheet (hidden on screen) -->
+<div class="printsheet" id="printsheet">
+  <h1>🌟 Kenzie's Good Habits — Week of ______________</h1>
+  <p class="ps-sub">Check a box each day you do it. Small habits, every day, build a strong and happy you. 💪</p>
+  <table class="ps-grid">
+    <thead><tr><th>Habit</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr></thead>
+    <tbody id="ps-rows"></tbody>
+  </table>
+  <div class="ps-cols">
+    <div>
+      <h2>💎 Live by these</h2><ul id="ps-values"></ul>
+      <h2>🎁 Rewards</h2><ul><li>10 points = 🍦 small treat</li><li>20 points = 🎉 special reward</li><li>30 points = 🏆 big reward / day trip</li></ul>
+    </div>
+    <div>
+      <h2>🌟 Weekly reflection</h2>
+      <p>What went really well this week?</p><div class="ps-line"></div><div class="ps-line"></div>
+      <p>What did I learn?</p><div class="ps-line"></div>
+      <p>How did I show kindness, courage, or responsibility?</p><div class="ps-line"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ KENZIE KID — fully local, private, no account ============ */
+var DAD_EMAIL = 'serratosalex20@gmail.com';
+var KEY = 'kenzie_kid_v1';
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+var S = load();
+S.habits = S.habits || {};   // { 'YYYY-MM-DD': { key:true } }
+S.journal = S.journal || [];
+
+function pad(n){return n<10?'0'+n:''+n;}
+function dkey(d){d=d||new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function isoWeek(d){d=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));var day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);var ys=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-ys)/86400000)+1)/7);}
+function weekStart(now){now=now||new Date();var d=new Date(now.getFullYear(),now.getMonth(),now.getDate());var off=(d.getDay()+6)%7;d.setDate(d.getDate()-off);return d;}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(window._t);window._t=setTimeout(function(){t.classList.remove('show');},2400);}
+
+var HABITS = [
+  {k:'bed',    e:'🛏️', t:'Make my bed'},
+  {k:'grat',   e:'🙏', t:'Write 3 things I\'m grateful for'},
+  {k:'move',   e:'🤸', t:'5–10 min of movement'},
+  {k:'eat',    e:'🥗', t:'Eat healthy meals'},
+  {k:'read',   e:'📚', t:'15–20 minutes of reading'},
+  {k:'create', e:'🎨', t:'Practice a creative skill'},
+  {k:'duty',   e:'✅', t:'Homework + chores before free time'},
+  {k:'reflect',e:'🌙', t:'Journal or pray before bed'}
+];
+var VALUES = [
+  {e:'🙏',t:'Gratitude',d:'Notice the good stuff and say thank you — and mean it.',y:'Write 3 things you\'re grateful for each morning.'},
+  {e:'🛡️',t:'Integrity',d:'Do the right thing — even when nobody is watching.',y:'Tell the truth this week, even when it\'s hard.'},
+  {e:'💗',t:'Kindness',d:'Treat people with love and respect.',y:'Do one kind thing for someone every day.'},
+  {e:'💪',t:'Resilience',d:'When it\'s hard, keep going. Falling down isn\'t failing.',y:'Try something you\'re not good at YET — and stick with it.'},
+  {e:'✅',t:'Responsibility',d:'Own your choices and your stuff.',y:'Do chores + homework before screen time, no reminders.'},
+  {e:'🌱',t:'Growth Mindset',d:'You get smarter and stronger by trying. "Not yet" beats "can\'t."',y:'When something\'s hard, add "yet": "I can\'t do this YET."'},
+  {e:'✨',t:'Faith',d:'Stay connected to something bigger than you — your way.',y:'Take one quiet minute each day to breathe, pray, or reflect.'}
+];
+
+function weekPoints(){var ws=weekStart(),tot=0;Object.keys(S.habits).forEach(function(dk){var dt=new Date(dk+'T00:00:00');if(isNaN(dt))return;if(dt>=ws){var day=S.habits[dk]||{};tot+=Object.keys(day).filter(function(x){return day[x];}).length;}});return tot;}
+function daysActive(){var ws=weekStart(),n=0;Object.keys(S.habits).forEach(function(dk){var dt=new Date(dk+'T00:00:00');if(isNaN(dt))return;if(dt>=ws){var day=S.habits[dk]||{};if(Object.keys(day).some(function(x){return day[x];}))n++;}});return n;}
+function rewardLevel(p){return p>=30?'🏆 Big reward!':p>=20?'🎉 Special reward!':p>=10?'🍦 Small treat!':'keep going 💪';}
+
+function toggleHabit(k){
+  var d=dkey(); S.habits[d]=S.habits[d]||{};
+  if(S.habits[d][k]){delete S.habits[d][k];}else{S.habits[d][k]=true;}
+  save(); renderHabits();
+  if(HABITS.every(function(h){return S.habits[d][h.k];})) toast('All 8 done today! 🌟 Amazing, Kenzie!');
+}
+function renderHabits(){
+  var today=dkey(); var checks=S.habits[today]||{};
+  document.getElementById('hb-date').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  var list=document.getElementById('hb-list'); list.textContent='';
+  HABITS.forEach(function(h){
+    var li=document.createElement('li'); li.className='hb-item'+(checks[h.k]?' done':'');
+    li.addEventListener('click',function(){toggleHabit(h.k);});
+    var box=document.createElement('span');box.className='hb-box';box.textContent=checks[h.k]?'✓':'';
+    var em=document.createElement('span');em.className='hb-emoji';em.textContent=h.e;
+    var tx=document.createElement('span');tx.className='hb-tx';tx.textContent=h.t;
+    li.appendChild(box);li.appendChild(em);li.appendChild(tx);list.appendChild(li);
+  });
+  var doneToday=HABITS.filter(function(h){return checks[h.k];}).length;
+  var pts=weekPoints();
+  var pEl=document.getElementById('hb-points');pEl.textContent='';
+  var line=document.createElement('div');line.className='hb-ptline';
+  line.textContent='Today: '+doneToday+'/8    ·    This week: '+pts+' points ⭐';
+  pEl.appendChild(line);
+  var ladder=document.createElement('div');ladder.className='hb-ladder';
+  [{p:10,t:'🍦 small treat'},{p:20,t:'🎉 special'},{p:30,t:'🏆 big reward'}].forEach(function(tr){
+    var c=document.createElement('span');c.className='hb-tier'+(pts>=tr.p?' hit':'');
+    c.textContent=tr.p+' = '+tr.t+(pts>=tr.p?' ✓':'');ladder.appendChild(c);
+  });
+  pEl.appendChild(ladder);
+}
+function renderSuperpower(){
+  var v=VALUES[(isoWeek(new Date())-1)%VALUES.length];
+  document.getElementById('sp-name').textContent=v.e+' '+v.t;
+  document.getElementById('sp-desc').textContent=v.d;
+  var t=document.getElementById('sp-try');t.textContent='';
+  var b=document.createElement('b');b.textContent='Try this week: ';
+  t.appendChild(b);t.appendChild(document.createTextNode(v.y));
+}
+function renderJournal(){
+  var box=document.getElementById('entries'); box.textContent='';
+  if(!S.journal.length){var e=document.createElement('div');e.className='empty';e.textContent='Nothing yet. Your first entry is just for you. 🌙';box.appendChild(e);return;}
+  S.journal.slice().reverse().forEach(function(en){
+    var d=document.createElement('div');d.className='entry';
+    var m=document.createElement('div');m.className='meta';
+    var dt=document.createElement('span');dt.textContent=en.date;
+    var del=document.createElement('button');del.className='del';del.textContent='×';del.title='Delete';
+    del.addEventListener('click',function(){ if(confirm('Delete this entry?')){ S.journal=S.journal.filter(function(x){return x.id!==en.id;}); save(); renderJournal(); } });
+    m.appendChild(dt);m.appendChild(del);
+    var bd=document.createElement('div');bd.className='body';bd.textContent=en.body;
+    d.appendChild(m);d.appendChild(bd);box.appendChild(d);
+  });
+}
+function buildPrintSheet(){
+  var rows=document.getElementById('ps-rows');rows.textContent='';
+  HABITS.forEach(function(h){var tr=document.createElement('tr');var td=document.createElement('td');td.textContent=h.e+' '+h.t;tr.appendChild(td);for(var i=0;i<7;i++){var c=document.createElement('td');c.className='box';tr.appendChild(c);}rows.appendChild(tr);});
+  var pv=document.getElementById('ps-values');pv.textContent='';
+  VALUES.forEach(function(v){var li=document.createElement('li');li.textContent=v.e+' '+v.t;pv.appendChild(li);});
+}
+function shareToDad(){
+  var pts=weekPoints(), days=daysActive(), today=S.habits[dkey()]||{};
+  var doneToday=HABITS.filter(function(h){return today[h.k];}).length;
+  var body='Hi Dad! Here is my Compass progress this week 🧭\n\n'
+    +'⭐ Points this week: '+pts+'\n'
+    +'📅 Days I showed up: '+days+'\n'
+    +'🎁 Reward level: '+rewardLevel(pts)+'\n'
+    +'✅ Today I did '+doneToday+'/8 habits\n\n'
+    +'(My journal stays private 😊)\n\nLove, Kenzie';
+  window.location.href='mailto:'+DAD_EMAIL+'?subject='+encodeURIComponent('Kenzie\'s Compass progress 🧭')+'&body='+encodeURIComponent(body);
+}
+
+/* ---- wires ---- */
+var jd=document.getElementById('jdate'); if(jd&&!jd.value) jd.value=dkey();
+document.getElementById('jsave').onclick=function(){
+  var body=document.getElementById('jbody').value.trim();
+  if(!body){toast('Write something first. 💛');return;}
+  S.journal.push({id:'k'+Date.now()+Math.random().toString(36).slice(2,6),date:document.getElementById('jdate').value||dkey(),body:body,created:new Date().toISOString()});
+  save(); document.getElementById('jbody').value=''; renderJournal(); toast('Saved. Just for you. 🔒');
+};
+document.getElementById('jclear').onclick=function(){document.getElementById('jbody').value='';};
+document.getElementById('hb-print').onclick=function(){buildPrintSheet();window.print();};
+document.getElementById('share').onclick=shareToDad;
+
+renderHabits(); renderSuperpower(); renderJournal(); buildPrintSheet();
+</script>
+</body>
+</html>
