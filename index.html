@@ -347,6 +347,28 @@
   a.reset{color:var(--faint);text-decoration:none;border-bottom:1px dashed var(--faint);cursor:pointer}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--money);color:#10210a;font-weight:700;font-size:13.5px;padding:11px 18px;border-radius:999px;z-index:60;opacity:0;transition:.3s;pointer-events:none;text-align:center;max-width:90%}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  /* ===== Game layer (Atlas): rank HUD · +XP float · ember rank-up ===== */
+  .gamebar{display:flex;flex-direction:column;gap:9px;background:linear-gradient(150deg,rgba(233,184,114,.10),rgba(240,114,106,.05));border:1px solid rgba(233,184,114,.22);border-radius:var(--radius);padding:13px 16px;margin:0 0 14px}
+  .gb-top{display:flex;justify-content:space-between;align-items:center}
+  .gb-level{display:flex;align-items:center;gap:10px}
+  .gb-level .gb-emoji{font-size:23px;line-height:1}
+  .gb-level .gb-name{font-weight:800;font-size:16px;letter-spacing:.02em;color:var(--ink);line-height:1.1}
+  .gb-level .gb-lvl{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+  .gb-streak{font-size:13px;font-weight:800;color:var(--gold);background:rgba(233,184,114,.10);border:1px solid rgba(233,184,114,.28);border-radius:8px;padding:5px 10px;white-space:nowrap}
+  .gb-xpbar{height:8px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .gb-xpfill{height:100%;width:0;background:linear-gradient(90deg,var(--family),var(--gold));border-radius:6px;box-shadow:0 0 10px rgba(233,184,114,.4);transition:width .5s cubic-bezier(.2,.9,.3,1)}
+  .gb-xptext{font-size:10.5px;color:var(--muted);font-weight:600;letter-spacing:.03em;text-align:right}
+  .xpfloat{position:fixed;transform:translate(-50%,0);pointer-events:none;z-index:85;font-weight:800;font-size:15px;color:var(--gold);text-shadow:0 1px 4px rgba(0,0,0,.7);animation:xpf 1.1s ease-out forwards}
+  @keyframes xpf{0%{opacity:0;transform:translate(-50%,4px) scale(.8)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-44px) scale(1.05)}}
+  .rankup{position:fixed;inset:0;display:none;place-items:center;z-index:84;padding:30px;text-align:center;background:radial-gradient(600px 380px at 50% 38%,rgba(240,114,106,.22),rgba(22,19,14,.96) 70%);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+  .rankup.show{display:grid;animation:rufade .3s ease}
+  @keyframes rufade{from{opacity:0}to{opacity:1}}
+  .ru-emoji{font-size:78px;line-height:1;filter:drop-shadow(0 0 22px rgba(240,114,106,.6));animation:rupop .6s cubic-bezier(.2,1.5,.4,1)}
+  @keyframes rupop{0%{transform:scale(0) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
+  .ru-up{font-weight:800;font-size:13px;letter-spacing:.4em;text-transform:uppercase;color:var(--family);margin:16px 0 4px}
+  .ru-name{font-weight:800;font-size:38px;letter-spacing:.02em;color:var(--gold);text-shadow:0 0 26px rgba(233,184,114,.45);margin:0 0 6px}
+  .ru-lvl{color:var(--muted);font-size:14px;letter-spacing:.06em}
+  .ru-tap{color:var(--faint);font-size:12px;margin-top:24px}
 </style>
 </head>
 <body>
@@ -370,6 +392,16 @@
       </div>
     </div>
   </header>
+
+  <!-- Game HUD -->
+  <div class="gamebar" id="gamebar">
+    <div class="gb-top">
+      <div class="gb-level"><span class="gb-emoji" id="gb-emoji">🪖</span><div><div class="gb-name" id="gb-name">Recruit</div><div class="gb-lvl" id="gb-lvl">Level 1</div></div></div>
+      <div class="gb-streak" id="gb-streak">🔥 0 days</div>
+    </div>
+    <div class="gb-xpbar"><div class="gb-xpfill" id="gb-xpfill"></div></div>
+    <div class="gb-xptext" id="gb-xptext">0 XP</div>
+  </div>
 
   <div class="controls">
     <div class="seg" id="modeseg">
@@ -576,6 +608,15 @@
     <div style="margin-top:16px"><button class="btn ghost" id="day-close">Close</button></div>
   </div>
 </div>
+
+<!-- Rank-up celebration overlay -->
+<div class="rankup" id="rankup"><div class="ru-card">
+  <div class="ru-emoji" id="ru-emoji">🔥</div>
+  <div class="ru-up">Rank Up</div>
+  <div class="ru-name" id="ru-name">Forged</div>
+  <div class="ru-lvl" id="ru-lvl">Level 3</div>
+  <div class="ru-tap">tap to close</div>
+</div></div>
 
 <div class="toast" id="toast"></div>
 
@@ -1368,7 +1409,7 @@ function renderTimeline(){
       '<div class="body"><div class="ttl">'+(b.star?'<span class="star">⭐</span>':'')+b.t+
       ' <span class="pill" style="background:var('+P[b.p]+')">'+PN[b.p]+'</span></div><div class="anchor">'+b.a+'</div></div>'+
       '<div class="bchk"><svg viewBox="0 0 24 24" fill="none" stroke="#15120c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>';
-    el.onclick=function(){cur.checks[i]=!cur.checks[i];save();renderTimeline();updateProgress();renderLog();};
+    el.onclick=function(){var on=!cur.checks[i];var r=this.getBoundingClientRect();cur.checks[i]=!cur.checks[i];save();renderTimeline();updateProgress();renderLog();renderGame(on?{gain:true,x:r.left+r.width/2,y:r.top+r.height/2}:{});};
     tl.appendChild(el);
   });
   markNow();
@@ -1380,13 +1421,13 @@ function renderMVD(){
     li.innerHTML='<span class="chk"><svg viewBox="0 0 24 24" fill="none" stroke="#15120c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>'+
       '<span><span class="mt">'+m.t+'</span><span class="ms">'+m.s+'</span></span>';
     li.onclick=(function(idx,liEl){return function(){
-      var before = countMvdDone();
+      var before = countMvdDone(); var on=!cur.mvd[idx]; var rect = liEl.getBoundingClientRect();
       cur.mvd[idx]=!cur.mvd[idx];
       save(); renderMVD(); renderLog();
       var after = countMvdDone();
+      renderGame(on?{gain:true,x:rect.left+rect.width/2,y:rect.top+rect.height/2}:{});
       // Celebrate ONLY the transition into 5/5 (perfect Floor). Not 4→3, not 4→5→4→5 spam.
       if(before < 5 && after === 5){
-        var rect = liEl.getBoundingClientRect();
         triggerConfetti({ x: rect.left + rect.width/2, y: rect.top + rect.height/2 });
         toast('Full Floor — 5/5. Bank it. 🌟');
       }
@@ -1406,7 +1447,7 @@ function renderTasks(){
     li.innerHTML='<span class="tbox"><svg viewBox="0 0 24 24" fill="none" stroke="#15120c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>'+
       '<span class="tx"></span><button class="del" title="delete">×</button>';
     li.querySelector('.tx').textContent=t.text;
-    li.querySelector('.tbox').onclick=function(){t.done=!t.done;save();renderTasks();renderLog();};
+    li.querySelector('.tbox').onclick=function(){var on=!t.done;var r=this.getBoundingClientRect();t.done=!t.done;save();renderTasks();renderLog();renderGame(on?{gain:true,x:r.left+r.width/2,y:r.top+r.height/2}:{});};
     li.querySelector('.del').onclick=function(){cur.tasks=cur.tasks.filter(function(x){return x.id!==t.id;});save();renderTasks();renderLog();};
     ul.appendChild(li);
   });
@@ -1549,6 +1590,7 @@ function lockIn(){
   cur.closed=true;save();closeReview();toast('Day locked in. Rest well, Alex. 🌙');renderLog();
   // Closeout celebration — the day's official punctuation.
   triggerConfetti();
+  renderGame();
 }
 function openDay(d){
   var r=recFor(d);
@@ -1626,12 +1668,61 @@ document.getElementById('importfile').onchange=function(e){if(e.target.files&&e.
 document.getElementById('resetbtn').onclick=function(){cur.checks={};cur.mvd={};save();renderTimeline();renderMVD();updateProgress();renderLog();toast('Today reset.');};
 
 /* ============ RENDER ALL + BOOT ============ */
+/* ============ GAME LAYER (earned / subtle, leverage-weighted) ============
+   XP is DERIVED from logged days (today + history) so it can't drift or be farmed.
+   Per-check feedback is a quiet +XP; the ember RANK UP is reserved for level-ups,
+   streak milestones, and perfect days. Streak is tied to holding the Floor. */
+var ATLAS_LEVELS=[{n:'Recruit',e:'🪖'},{n:'Disciplined',e:'🧭'},{n:'Forged',e:'🔥'},{n:'Relentless',e:'⚡'},{n:'Vanguard',e:'🛡️'},{n:'Ironclad',e:'⚙️'},{n:'Warlord',e:'⚔️'},{n:'Unbreakable',e:'🗿'},{n:'Sovereign',e:'👑'},{n:'Legend',e:'🏆'}];
+var PILLAR_XP={body:5,mind:15,spirit:8,family:15,money:8,rest:5};   // leverage-weighted: deep-work(mind) + family worth most
+state.gameLevel = state.gameLevel || 1;
+state.gameStreakSeen = state.gameStreakSeen || 0;
+var _atlasXPprev=null;
+function dayXP(rec){
+  if(!rec) return 0; var x=0;
+  PORDER.forEach(function(p){ x += ((rec.pillars&&rec.pillars[p])||0) * PILLAR_XP[p]; });
+  x += (rec.mvd||0)*15;
+  if((rec.mvd||0)>=5) x += 75;                                       // full Floor
+  x += (rec.tasksDone||0)*20;
+  if(rec.top3 && (rec.top3.a||rec.top3.b||rec.top3.c)) x += 10;
+  if(rec._closed) x += 50;                                           // closing the day
+  if(rec.total>0 && rec.done===rec.total && (rec.mvd||0)>=5 && rec._closed) x += 100; // perfect day
+  return x;
+}
+function atlasXP(){ var xp=0; Object.keys(state.history).forEach(function(k){xp+=dayXP(state.history[k]);}); xp+=dayXP(buildRecord(cur)); return xp; }
+function atlasLvlThreshold(L){return 200*L*(L-1);}
+function atlasLevelFromXP(xp){var L=1;while(atlasLvlThreshold(L+1)<=xp)L++;return L;}
+function atlasLevelMeta(L){return ATLAS_LEVELS[Math.min(L-1,ATLAS_LEVELS.length-1)];}
+function floorOn(k){var r=(k===dkey())?buildRecord(cur):state.history[k];return !!(r&&(r.mvd||0)>=3);}
+function atlasStreak(){var d=new Date();if(!floorOn(dkey(d)))d.setDate(d.getDate()-1);var s=0,miss=0;for(var i=0;i<400;i++){var k=dkey(d);if(floorOn(k)){s++;miss=0;}else{miss++;if(miss>=2)break;}d.setDate(d.getDate()-1);}return s;}
+function floatXP(amt,x,y){if(!amt)return;var el=document.createElement('div');el.className='xpfloat';el.textContent='+'+amt+' XP';el.style.left=x+'px';el.style.top=y+'px';document.body.appendChild(el);setTimeout(function(){el.remove();},1100);}
+function showRankUp(L){var m=atlasLevelMeta(L);document.getElementById('ru-emoji').textContent=m.e;document.getElementById('ru-name').textContent=m.n;document.getElementById('ru-lvl').textContent='Level '+L;document.getElementById('rankup').classList.add('show');triggerConfetti();clearTimeout(window._ru);window._ru=setTimeout(function(){document.getElementById('rankup').classList.remove('show');},4200);}
+function renderGame(opts){
+  var nameEl=document.getElementById('gb-name'); if(!nameEl) return;
+  var xp=atlasXP(), L=atlasLevelFromXP(xp), m=atlasLevelMeta(L);
+  var c0=atlasLvlThreshold(L), nx=atlasLvlThreshold(L+1), into=xp-c0, span=Math.max(1,nx-c0);
+  document.getElementById('gb-emoji').textContent=m.e;
+  nameEl.textContent=m.n;
+  document.getElementById('gb-lvl').textContent='Level '+L;
+  document.getElementById('gb-xpfill').style.width=Math.max(3,Math.min(100,(into/span)*100))+'%';
+  document.getElementById('gb-xptext').textContent=xp.toLocaleString()+' XP · '+Math.max(0,nx-xp).toLocaleString()+' to next';
+  var st=atlasStreak();
+  document.getElementById('gb-streak').textContent='🔥 '+st+(st===1?' day':' days');
+  if(opts && opts.gain && _atlasXPprev!=null && opts.x!=null){ var g=xp-_atlasXPprev; if(g>0) floatXP(g,opts.x,opts.y); }
+  _atlasXPprev=xp;
+  if(L>state.gameLevel){state.gameLevel=L;save();showRankUp(L);} else if(L<state.gameLevel){state.gameLevel=L;save();}
+  var mils=[7,30,75,150,365],hit=0; mils.forEach(function(mm){if(st>=mm)hit=mm;});
+  if(hit>state.gameStreakSeen){state.gameStreakSeen=hit;save();toast('🔥 '+hit+'-day Floor streak — forged in consistency.');triggerConfetti();}
+  else if(st<7 && state.gameStreakSeen!==0){state.gameStreakSeen=0;save();}
+}
+(function(){var ru=document.getElementById('rankup'); if(ru) ru.onclick=function(){this.classList.remove('show');};})();
+
 function renderAll(){
   document.querySelector('#modeseg button[data-mode="'+MODE+'"]').classList.add('on');
   var rb=document.querySelector('#ranges button[data-r="'+RANGE+'"]');if(rb)rb.classList.add('on');
   renderTimeline();renderMVD();renderTasks();wireTop3();renderLog();updateProgress();
   renderKenzieTile();renderSundayReview();renderJournal();renderUpcoming();
   if(typeof renderNotifs === 'function') renderNotifs();
+  renderGame();
 }
 function boot(){
   ensureToday();cur=state.current;MODE=cur.mode||liveMode();
