@@ -73,6 +73,29 @@
   .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#2A2218;color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:11px 18px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:50;box-shadow:0 12px 30px -10px rgba(0,0,0,.7)}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+  /* Affirmations */
+  .afm{background:linear-gradient(160deg,rgba(240,114,106,.13),rgba(233,184,114,.06));border-color:rgba(240,114,106,.3)}
+  .afm-list{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:7px}
+  .afm-list li{font-family:'Fraunces',serif;font-size:16px;font-weight:500;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 13px}
+  .afm-goal{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:13px;color:var(--muted)}
+  .afm-goal button{background:var(--card);border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:5px 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  .afm-goal button.on{background:var(--gold);border-color:var(--gold);color:#2a210f}
+  .afm-sessions{display:grid;gap:11px}
+  .afm-sess{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .afm-sess.done{background:rgba(143,197,107,.12);border-color:rgba(143,197,107,.45)}
+  .afm-sess .sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .afm-sess .sh b{font-size:16px}
+  .afm-sess .sh .cnt{font-size:13px;color:var(--muted);font-weight:700}
+  .afm-sess.done .sh .cnt{color:var(--green)}
+  .afm-dots{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .afm-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);transition:.15s}
+  .afm-dot.fill{background:var(--coral);border-color:var(--coral)}
+  .afm-sess.done .afm-dot.fill{background:var(--green);border-color:var(--green)}
+  .afm-tap{width:100%;background:var(--coral);color:#2a1310;border:0;border-radius:13px;padding:14px;font:inherit;font-weight:800;font-size:16px;cursor:pointer;transition:.12s}
+  .afm-tap:active{transform:scale(.97)}
+  .afm-sess.done .afm-tap{background:var(--green);color:#16130E}
+  .afm-reset{background:none;border:0;color:var(--faint);font-size:12px;cursor:pointer;text-decoration:underline;display:block;margin:8px auto 0}
+
   /* Printable weekly fridge sheet — hidden on screen, shown only when printing */
   .printsheet{display:none}
   @media print{
@@ -109,6 +132,15 @@
     <ul class="hb-list" id="hb-list"></ul>
     <div class="hb-points" id="hb-points"></div>
     <button class="btn ghost full" id="hb-print">🖨️ Print my weekly sheet</button>
+  </div>
+
+  <!-- Daily affirmations -->
+  <div class="panel afm">
+    <h2>🌟 My Affirmations</h2>
+    <p class="lead">Say these out loud — like you really mean it — in the morning and at night. Your words become your world. 💛</p>
+    <ul class="afm-list" id="afm-list"></ul>
+    <div class="afm-goal">Say them: <button data-g="5" id="afm-g5">5×</button> <button data-g="10" id="afm-g10">10×</button></div>
+    <div class="afm-sessions" id="afm-sessions"></div>
   </div>
 
   <!-- This week's superpower (value) -->
@@ -269,13 +301,64 @@ function buildPrintSheet(){
 function shareToDad(){
   var pts=weekPoints(), days=daysActive(), today=S.habits[dkey()]||{};
   var doneToday=HABITS.filter(function(h){return today[h.k];}).length;
+  var at=affirmToday();
+  var amTxt=(at.am>=S.affirmGoal?'✓ done':at.am+'/'+S.affirmGoal), pmTxt=(at.pm>=S.affirmGoal?'✓ done':at.pm+'/'+S.affirmGoal);
   var body='Hi Dad! Here is my Compass progress this week 🧭\n\n'
     +'⭐ Points this week: '+pts+'\n'
     +'📅 Days I showed up: '+days+'\n'
     +'🎁 Reward level: '+rewardLevel(pts)+'\n'
-    +'✅ Today I did '+doneToday+'/8 habits\n\n'
+    +'✅ Today I did '+doneToday+'/8 habits\n'
+    +'🌟 Affirmations today: morning '+amTxt+' · night '+pmTxt+'\n\n'
     +'(My journal stays private 😊)\n\nLove, Kenzie';
   window.location.href='mailto:'+DAD_EMAIL+'?subject='+encodeURIComponent('Kenzie\'s Compass progress 🧭')+'&body='+encodeURIComponent(body);
+}
+
+/* ---- affirmations: say them N times, morning + night, check off ---- */
+var AFFIRMATIONS = [
+  'I am brave, even when I feel scared.',
+  'I can do hard things.',
+  'I am kind, and my kindness makes the world better.',
+  'I get smarter and stronger every time I try.',
+  'My voice matters — I can speak up and say no.',
+  'I am enough, exactly as I am.',
+  'I choose to keep going. I never quit on myself.',
+  'I am loved, and I am made for great things.'
+];
+S.affirm = S.affirm || {};            // { 'YYYY-MM-DD': { am:Number, pm:Number } }
+S.affirmGoal = S.affirmGoal || 5;     // 5 or 10
+function affirmToday(){ var d=dkey(); S.affirm[d]=S.affirm[d]||{am:0,pm:0}; return S.affirm[d]; }
+function setGoal(g){ S.affirmGoal=g; save(); renderAffirm(); }
+function tapAffirm(sess){
+  var t=affirmToday(); var was=(t[sess]||0)>=S.affirmGoal;
+  t[sess]=(t[sess]||0)+1; save(); renderAffirm();
+  if(!was && t[sess]>=S.affirmGoal){ toast((sess==='am'?'☀️ Morning':'🌙 Night')+' affirmations done! 🌟 So proud of you!'); }
+}
+function renderAffirm(){
+  var list=document.getElementById('afm-list');
+  if(list){ list.textContent=''; AFFIRMATIONS.forEach(function(a){ var li=document.createElement('li'); li.textContent='“'+a+'”'; list.appendChild(li); }); }
+  var g5=document.getElementById('afm-g5'), g10=document.getElementById('afm-g10');
+  if(g5) g5.classList.toggle('on', S.affirmGoal===5);
+  if(g10) g10.classList.toggle('on', S.affirmGoal===10);
+  var t=affirmToday();
+  var wrap=document.getElementById('afm-sessions'); if(!wrap) return; wrap.textContent='';
+  [{k:'am',label:'☀️ Morning',word:'Morning'},{k:'pm',label:'🌙 Night',word:'Night'}].forEach(function(s){
+    var cnt=t[s.k]||0, done=cnt>=S.affirmGoal;
+    var sess=document.createElement('div'); sess.className='afm-sess'+(done?' done':'');
+    var sh=document.createElement('div'); sh.className='sh';
+    var b=document.createElement('b'); b.textContent=s.label;
+    var c=document.createElement('span'); c.className='cnt'; c.textContent=done?'✓ Done!':(cnt+' / '+S.affirmGoal);
+    sh.appendChild(b); sh.appendChild(c); sess.appendChild(sh);
+    var dots=document.createElement('div'); dots.className='afm-dots';
+    for(var i=0;i<S.affirmGoal;i++){ var dot=document.createElement('span'); dot.className='afm-dot'+(i<cnt?' fill':''); dots.appendChild(dot); }
+    sess.appendChild(dots);
+    var tap=document.createElement('button'); tap.className='afm-tap';
+    tap.textContent=done?('🌟 '+s.word+' done — say more!'):'✋ I said them once';
+    tap.addEventListener('click',function(){ tapAffirm(s.k); });
+    sess.appendChild(tap);
+    if(cnt>0){ var rst=document.createElement('button'); rst.className='afm-reset'; rst.textContent='reset';
+      rst.addEventListener('click',function(){ t[s.k]=0; save(); renderAffirm(); }); sess.appendChild(rst); }
+    wrap.appendChild(sess);
+  });
 }
 
 /* ---- wires ---- */
@@ -289,8 +372,10 @@ document.getElementById('jsave').onclick=function(){
 document.getElementById('jclear').onclick=function(){document.getElementById('jbody').value='';};
 document.getElementById('hb-print').onclick=function(){buildPrintSheet();window.print();};
 document.getElementById('share').onclick=shareToDad;
+document.getElementById('afm-g5').onclick=function(){setGoal(5);};
+document.getElementById('afm-g10').onclick=function(){setGoal(10);};
 
-renderHabits(); renderSuperpower(); renderJournal(); buildPrintSheet();
+renderHabits(); renderAffirm(); renderSuperpower(); renderJournal(); buildPrintSheet();
 </script>
 </body>
 </html>
