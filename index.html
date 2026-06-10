@@ -610,6 +610,32 @@ var weekday=[
  {s:'21:40',e:'22:00',p:'rest',t:'Power Down',a:'<b>Read your identity statement out loud</b> one last time. Screens off, dim the lights, let the nervous system land.'},
  {s:'22:00',e:'23:59',p:'body',star:1,t:'Sleep',a:'~7.75 hrs. <b>Sleep is the performance drug.</b> Protect it like money.'},
 ];
+/* ===== SUMMER weekday — Kenzie home, no school until 2026-08-10 =====
+   Auto-selected by listFor() until Aug 10, then reverts to `weekday` on its own
+   (nothing to switch back). No school run; Train moves early (before she wakes);
+   a Kenzie Summer-Morning habit block (her Good Habits sheet) + a big afternoon
+   Adventure block fill the freed school hours. His work anchors are preserved. */
+var summerWeekday=[
+ {s:'05:45',e:'06:00',p:'body',star:1,t:'Wake & Prime',a:'Feet on floor → <b>water + sunlight, no phone</b>. <b>Read your identity statement out loud.</b> The house is quiet — these early minutes are yours.'},
+ {s:'06:00',e:'06:20',p:'spirit',star:1,t:'Stillness',a:'<b>10 min meditation / breathwork</b> (or drums). Regulate before the day — and the kid — wakes.'},
+ {s:'06:20',e:'07:20',p:'body',star:1,t:'Train (early)',a:'Gym <b>before she\'s up</b> — summer mornings are yours till she wakes. Move first; the mind follows.'},
+ {s:'07:20',e:'08:00',p:'rest',t:'Reset & Set Top 3',a:'Shower, protein. <b>Confirm today\'s 3</b> before the house stirs. Open the board.'},
+ {s:'08:00',e:'09:00',p:'family',star:1,t:'Kenzie — Summer Morning',a:'Breakfast together, then her <b>Good Habits sheet</b> (bed, gratitude, 5–10 min move, reading). Present — phone away. <b>This is the point of summer.</b>'},
+ {s:'09:00',e:'09:30',p:'money',t:'Markets',a:'NY session: <b>A+ setups only</b> (run the NOIC checklist). Quick + clean, journal every trade. No revenge, no vibes.'},
+ {s:'09:30',e:'11:30',p:'mind',star:1,t:'Deep Work I — Revenue Engine',a:'<b>Phone in another room.</b> The fast-cash lever (Alamo Credit-to-Close / client builds). Kenzie on her own track: reading, a creative skill, a workbook project — or camp/activity if booked.'},
+ {s:'11:30',e:'12:30',p:'body',t:'Fuel & Move (together)',a:'Lunch together. Get <b>outside</b> — walk, pool, bikes. Resets both your dopamine baselines.'},
+ {s:'12:30',e:'14:00',p:'mind',t:'Deep Work II — Build',a:'Single focus: client builds (A Tex / Hitch) or Clean Path OS. Kenzie: quiet hour — reading, creative, or screen-capped. One thing, finished.'},
+ {s:'14:00',e:'15:00',p:'rest',t:'Admin Batch',a:'<b>All</b> email / DMs / follow-ups in one window. Then close the tab.'},
+ {s:'15:00',e:'17:30',p:'family',star:1,t:'Kenzie Summer Adventure',a:'Out of the house: park, pool, museum, library, or build/learn something <b>together</b>. The memory you\'ll both keep. Phone away.'},
+ {s:'17:30',e:'18:30',p:'family',t:'Dinner Together',a:'Cook + eat as a family. <b>No phones at the table.</b>'},
+ {s:'18:30',e:'19:30',p:'family',t:'Family / Play',a:'Game, movie, project, or her choice. Be all the way in it.'},
+ {s:'19:30',e:'20:15',p:'family',t:'Kenzie Wind-Down',a:'Slow down together — talk, read, connect. (Sun: her <b>weekly reflection</b> — what went well, what to improve.)'},
+ {s:'20:15',e:'20:45',p:'mind',t:'Learning / Flex',a:'Read, course, or skill (optional). Out of gas? It becomes rest. <b>No guilt.</b>'},
+ {s:'20:45',e:'21:15',p:'spirit',t:'Quiet / Shadow Work + Video Journal',a:'<b>Record tonight\'s video journal</b> (speak it), then write it. Reflection / shadow work — turn the day into meaning.'},
+ {s:'21:15',e:'21:40',p:'rest',star:1,t:'Shutdown',a:'<b>Set tomorrow\'s Top 3.</b> Tidy one surface. Lay tomorrow out.'},
+ {s:'21:40',e:'22:00',p:'rest',t:'Power Down',a:'<b>Read your identity statement out loud</b> one last time. Screens off, dim the lights, let the nervous system land.'},
+ {s:'22:00',e:'23:59',p:'body',star:1,t:'Sleep',a:'~7.75 hrs. <b>Sleep is the performance drug.</b> Protect it like money.'},
+];
 var weekend=[
  {s:'07:00',e:'07:20',p:'body',star:1,t:'Wake & Prime',a:'Water + sunlight, no phone. Easy start, same anchor. <b>Read your identity statement out loud.</b>'},
  {s:'07:20',e:'07:45',p:'spirit',star:1,t:'Stillness',a:'Meditation / breath / drums. Longer if it feels good.'},
@@ -1255,7 +1281,14 @@ var toMin=function(h){var x=h.split(':');return (+x[0])*60+(+x[1]);};
 var fmt12=function(h){var x=h.split(':');var H=+x[0],m=+x[1];var ap=H>=12?'pm':'am';H=H%12||12;return H+(m?':'+pad(m):'')+ap;};
 var dkey=function(d){d=d||new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());};
 var liveMode=function(){var d=new Date().getDay();return(d===0||d===6)?'weekend':'weekday';};
-var listFor=function(m){return m==='weekday'?weekday:weekend;};
+// Kenzie's summer break: weekdays use summerWeekday until she's back to school on
+// 2026-08-10, then this gate flips false and the school-year weekday returns — no
+// manual switch-back. (Month is 0-indexed: 7 = August.)
+var SUMMER_BACK_TO_SCHOOL=new Date(2026,7,10);
+var listFor=function(m){
+  if(m==='weekend') return weekend;
+  return (new Date()<SUMMER_BACK_TO_SCHOOL) ? summerWeekday : weekday;
+};
 function freshDay(date,mode){return{date:date,mode:mode,checks:{},mvd:{},tasks:[],top3:{a:'',b:'',c:''},closed:false};}
 
 function ensureToday(){
