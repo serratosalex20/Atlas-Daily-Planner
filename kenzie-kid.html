@@ -103,6 +103,29 @@
   .afm-list li.custom span{flex:1}
   .afm-del{flex:none;background:none;border:0;color:var(--faint);font-size:18px;line-height:1;cursor:pointer}
 
+  /* ===== Game layer: level / XP bar / streak / confetti / level-up ===== */
+  .gamebar{background:linear-gradient(160deg,rgba(167,139,250,.16),rgba(240,114,106,.08));border:1px solid rgba(167,139,250,.32);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px}
+  .gb-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+  .gb-level{display:flex;align-items:center;gap:10px}
+  .gb-level .gb-emoji{font-size:27px;line-height:1}
+  .gb-level .gb-name{font-family:'Fraunces',serif;font-weight:700;font-size:18px;color:var(--ink);line-height:1.1}
+  .gb-level .gb-lvl{font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+  .gb-streak{font-size:14px;font-weight:800;color:var(--gold);background:rgba(233,184,114,.12);border:1px solid rgba(233,184,114,.3);border-radius:999px;padding:6px 12px;white-space:nowrap}
+  .gb-xpbar{height:11px;background:var(--card);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .gb-xpfill{height:100%;width:0;background:linear-gradient(90deg,var(--purple),var(--coral),var(--gold));border-radius:999px;transition:width .55s cubic-bezier(.2,.9,.3,1)}
+  .gb-xptext{font-size:11px;color:var(--muted);font-weight:600;margin-top:5px;text-align:right}
+  .confetti{position:fixed;width:10px;height:10px;pointer-events:none;z-index:60;border-radius:2px;will-change:transform,opacity;animation:confpop .95s ease-out forwards}
+  @keyframes confpop{0%{transform:translate(0,0) rotate(0);opacity:1}100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot));opacity:0}}
+  .levelup{position:fixed;inset:0;background:rgba(22,19,14,.93);display:none;place-items:center;z-index:70;padding:30px;text-align:center;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+  .levelup.show{display:grid;animation:lufade .35s ease}
+  @keyframes lufade{from{opacity:0}to{opacity:1}}
+  .lu-emoji{font-size:80px;line-height:1;animation:lupop .6s cubic-bezier(.2,1.5,.4,1)}
+  @keyframes lupop{0%{transform:scale(0) rotate(-30deg)}100%{transform:scale(1) rotate(0)}}
+  .lu-up{font-family:'Fraunces',serif;font-weight:700;font-size:14px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);margin:16px 0 4px}
+  .lu-name{font-family:'Fraunces',serif;font-weight:700;font-size:36px;background:linear-gradient(90deg,var(--purple),var(--coral),var(--gold));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin:0 0 6px}
+  .lu-lvl{color:var(--muted);font-size:14px}
+  .lu-tap{color:var(--faint);font-size:12px;margin-top:24px}
+
   /* Printable weekly fridge sheet — hidden on screen, shown only when printing */
   .printsheet{display:none}
   @media print{
@@ -129,6 +152,16 @@
     <div class="mark">🧭</div>
     <h1>Kenzie's Compass</h1>
     <p>Your space, Kenzie. Small habits → big you. 💛</p>
+  </div>
+
+  <!-- Game HUD -->
+  <div class="gamebar" id="gamebar">
+    <div class="gb-top">
+      <div class="gb-level"><span class="gb-emoji" id="gb-emoji">✨</span><div><div class="gb-name" id="gb-name">Spark</div><div class="gb-lvl" id="gb-lvl">Level 1</div></div></div>
+      <div class="gb-streak" id="gb-streak">🔥 0 days</div>
+    </div>
+    <div class="gb-xpbar"><div class="gb-xpfill" id="gb-xpfill"></div></div>
+    <div class="gb-xptext" id="gb-xptext">0 XP</div>
   </div>
 
   <!-- Today's Habits -->
@@ -205,6 +238,15 @@
   </div>
 </div>
 
+<!-- Level-up celebration overlay -->
+<div class="levelup" id="levelup"><div class="lu-card">
+  <div class="lu-emoji" id="lu-emoji">✨</div>
+  <div class="lu-up">Level Up!</div>
+  <div class="lu-name" id="lu-name">Glow</div>
+  <div class="lu-lvl" id="lu-lvl">Level 2</div>
+  <div class="lu-tap">tap to close</div>
+</div></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -247,11 +289,12 @@ function weekPoints(){var ws=weekStart(),tot=0;Object.keys(S.habits).forEach(fun
 function daysActive(){var ws=weekStart(),n=0;Object.keys(S.habits).forEach(function(dk){var dt=new Date(dk+'T00:00:00');if(isNaN(dt))return;if(dt>=ws){var day=S.habits[dk]||{};if(Object.keys(day).some(function(x){return day[x];}))n++;}});return n;}
 function rewardLevel(p){return p>=30?'🏆 Big reward!':p>=20?'🎉 Special reward!':p>=10?'🍦 Small treat!':'keep going 💪';}
 
-function toggleHabit(k){
+function toggleHabit(k,el){
   var d=dkey(); S.habits[d]=S.habits[d]||{};
-  if(S.habits[d][k]){delete S.habits[d][k];}else{S.habits[d][k]=true;}
-  save(); renderHabits();
-  if(HABITS.every(function(h){return S.habits[d][h.k];})) toast('All 8 done today! 🌟 Amazing, Kenzie!');
+  var on=!S.habits[d][k];
+  if(on){S.habits[d][k]=true;}else{delete S.habits[d][k];}
+  save(); renderHabits(); renderGame();
+  if(on){ celebrateAt(el); if(HABITS.every(function(h){return S.habits[d][h.k];})) toast('All 8 done today! 🌟 Amazing, Kenzie!'); }
 }
 function renderHabits(){
   var today=dkey(); var checks=S.habits[today]||{};
@@ -259,7 +302,7 @@ function renderHabits(){
   var list=document.getElementById('hb-list'); list.textContent='';
   HABITS.forEach(function(h){
     var li=document.createElement('li'); li.className='hb-item'+(checks[h.k]?' done':'');
-    li.addEventListener('click',function(){toggleHabit(h.k);});
+    li.addEventListener('click',function(){toggleHabit(h.k,li);});
     var box=document.createElement('span');box.className='hb-box';box.textContent=checks[h.k]?'✓':'';
     var em=document.createElement('span');em.className='hb-emoji';em.textContent=h.e;
     var tx=document.createElement('span');tx.className='hb-tx';tx.textContent=h.t;
@@ -335,9 +378,10 @@ S.affirmGoal = S.affirmGoal || 5;        // 5 or 10
 function activeSetIndex(){ return Math.floor(Math.floor(Date.now()/86400000)/30) % AFFIRMATION_SETS.length; }
 function affirmToday(){ var d=dkey(); S.affirm[d]=S.affirm[d]||{am:0,pm:0}; return S.affirm[d]; }
 function setGoal(g){ S.affirmGoal=g; save(); renderAffirm(); }
-function tapAffirm(sess){
+function tapAffirm(sess,el){
   var t=affirmToday(); var was=(t[sess]||0)>=S.affirmGoal;
-  t[sess]=(t[sess]||0)+1; save(); renderAffirm();
+  t[sess]=(t[sess]||0)+1; save(); renderAffirm(); renderGame();
+  if(el) celebrateAt(el);
   if(!was && t[sess]>=S.affirmGoal){ toast((sess==='am'?'☀️ Morning':'🌙 Night')+' affirmations done! 🌟 So proud of you!'); }
 }
 function renderAffirm(){
@@ -369,12 +413,86 @@ function renderAffirm(){
     sess.appendChild(dots);
     var tap=document.createElement('button'); tap.className='afm-tap';
     tap.textContent=done?('🌟 '+s.word+' done — say more!'):'✋ I said them once';
-    tap.addEventListener('click',function(){ tapAffirm(s.k); });
+    tap.addEventListener('click',function(){ tapAffirm(s.k, tap); });
     sess.appendChild(tap);
     if(cnt>0){ var rst=document.createElement('button'); rst.className='afm-reset'; rst.textContent='reset';
       rst.addEventListener('click',function(){ t[s.k]=0; save(); renderAffirm(); }); sess.appendChild(rst); }
     wrap.appendChild(sess);
   });
+}
+
+/* ---- game layer: XP (weighted), levels, streak, confetti, level-up ---- */
+var LEVELS = [
+  {n:'Spark',e:'✨'},{n:'Glow',e:'🌟'},{n:'Bloom',e:'🌸'},{n:'Aurora',e:'🌈'},{n:'Crystal',e:'💎'},
+  {n:'Starlight',e:'🌠'},{n:'Celestial',e:'🪐'},{n:'Supernova',e:'💥'},{n:'Galaxy',e:'🌌'},{n:'Cosmic Queen',e:'👑'}
+];
+S.gameLevel = S.gameLevel || 1;
+S.streakSeen = S.streakSeen || 0;
+// XP is DERIVED from her data (so toggling off removes it — no farming). Weighted by leverage.
+function computeXP(){
+  var xp=0;
+  Object.keys(S.habits).forEach(function(dk){var day=S.habits[dk]||{};var n=Object.keys(day).filter(function(x){return day[x];}).length;xp+=n*10;if(n>=8)xp+=40;});
+  Object.keys(S.affirm).forEach(function(dk){var a=S.affirm[dk]||{};if((a.am||0)>=5)xp+=25;if((a.pm||0)>=5)xp+=25;});
+  xp+=(S.journal||[]).length*15;
+  return xp;
+}
+function lvlThreshold(L){return 50*L*(L-1);}                 // total XP to REACH level L
+function levelFromXP(xp){var L=1;while(lvlThreshold(L+1)<=xp)L++;return L;}
+function levelMeta(L){return LEVELS[Math.min(L-1,LEVELS.length-1)];}
+function activeOn(dk){
+  var h=S.habits[dk]||{};var nh=Object.keys(h).filter(function(x){return h[x];}).length;
+  var a=S.affirm[dk]||{};var aff=(a.am||0)>=5||(a.pm||0)>=5;
+  var j=(S.journal||[]).some(function(e){return e.date===dk;});
+  return nh>=3||aff||j;
+}
+function streakCount(){   // forgiving: one missed day doesn't break it; two in a row does
+  var d=new Date(); if(!activeOn(dkey(d))) d.setDate(d.getDate()-1);
+  var s=0,miss=0;
+  for(var i=0;i<400;i++){var k=dkey(d);if(activeOn(k)){s++;miss=0;}else{miss++;if(miss>=2)break;}d.setDate(d.getDate()-1);}
+  return s;
+}
+function confettiBurst(cx,cy){
+  var cols=['#F0726A','#E9B872','#A78BFA','#52B7AC','#F6A5C0','#FFD479'],shapes=['','','','★','♥','✦'];
+  for(var i=0;i<18;i++){
+    var p=document.createElement('span');p.className='confetti';
+    var ang=Math.random()*Math.PI*2,dist=55+Math.random()*120;
+    p.style.setProperty('--dx',(Math.cos(ang)*dist).toFixed(0)+'px');
+    p.style.setProperty('--dy',(Math.sin(ang)*dist-50).toFixed(0)+'px');
+    p.style.setProperty('--rot',(Math.random()*720-360).toFixed(0)+'deg');
+    var sh=shapes[Math.floor(Math.random()*shapes.length)];
+    if(sh){p.textContent=sh;p.style.background='transparent';p.style.color=cols[i%cols.length];p.style.width='auto';p.style.height='auto';p.style.fontSize=(13+Math.random()*8).toFixed(0)+'px';}
+    else{p.style.background=cols[i%cols.length];}
+    p.style.left=cx+'px';p.style.top=cy+'px';
+    document.body.appendChild(p);
+    (function(el){setTimeout(function(){el.remove();},1000);})(p);
+  }
+}
+function celebrateAt(el){if(!el){confettiBurst(innerWidth/2,innerHeight*0.4);return;}var r=el.getBoundingClientRect();confettiBurst(r.left+r.width/2,r.top+r.height/2);}
+function showLevelUp(L){
+  var m=levelMeta(L);
+  document.getElementById('lu-emoji').textContent=m.e;
+  document.getElementById('lu-name').textContent=m.n;
+  document.getElementById('lu-lvl').textContent='Level '+L;
+  document.getElementById('levelup').classList.add('show');
+  confettiBurst(innerWidth/2,innerHeight*0.35);
+  setTimeout(function(){confettiBurst(innerWidth*0.3,innerHeight*0.42);confettiBurst(innerWidth*0.7,innerHeight*0.42);},250);
+  clearTimeout(window._lu);window._lu=setTimeout(function(){document.getElementById('levelup').classList.remove('show');},4200);
+}
+function renderGame(){
+  var em=document.getElementById('gb-emoji'); if(!em) return;
+  var xp=computeXP(), L=levelFromXP(xp), m=levelMeta(L);
+  var cur=lvlThreshold(L), next=lvlThreshold(L+1), into=xp-cur, span=Math.max(1,next-cur);
+  em.textContent=m.e;
+  document.getElementById('gb-name').textContent=m.n;
+  document.getElementById('gb-lvl').textContent='Level '+L;
+  document.getElementById('gb-xpfill').style.width=Math.max(4,Math.min(100,(into/span)*100))+'%';
+  document.getElementById('gb-xptext').textContent=xp+' XP  ·  '+Math.max(0,next-xp)+' to next';
+  var st=streakCount();
+  document.getElementById('gb-streak').textContent='🔥 '+st+(st===1?' day':' days');
+  if(L>S.gameLevel){S.gameLevel=L;save();showLevelUp(L);} else if(L<S.gameLevel){S.gameLevel=L;save();}
+  var mils=[3,7,14,30,100],hit=0; mils.forEach(function(mm){if(st>=mm)hit=mm;});
+  if(hit>S.streakSeen){S.streakSeen=hit;save();toast('🔥 '+hit+'-day streak! You\'re on fire, Kenzie!');confettiBurst(innerWidth/2,innerHeight*0.4);}
+  else if(st<3 && S.streakSeen!==0){S.streakSeen=0;save();}
 }
 
 /* ---- wires ---- */
@@ -383,7 +501,7 @@ document.getElementById('jsave').onclick=function(){
   var body=document.getElementById('jbody').value.trim();
   if(!body){toast('Write something first. 💛');return;}
   S.journal.push({id:'k'+Date.now()+Math.random().toString(36).slice(2,6),date:document.getElementById('jdate').value||dkey(),body:body,created:new Date().toISOString()});
-  save(); document.getElementById('jbody').value=''; renderJournal(); toast('Saved. Just for you. 🔒');
+  save(); document.getElementById('jbody').value=''; renderJournal(); renderGame(); celebrateAt(this); toast('Saved. Just for you. 🔒');
 };
 document.getElementById('jclear').onclick=function(){document.getElementById('jbody').value='';};
 document.getElementById('hb-print').onclick=function(){buildPrintSheet();window.print();};
@@ -396,7 +514,8 @@ document.getElementById('afm-addbtn').onclick=function(){
   S.customAffirm=S.customAffirm||[]; S.customAffirm.push(v); inp.value=''; save(); renderAffirm(); toast('Added your own! 🌟');
 };
 
-renderHabits(); renderAffirm(); renderSuperpower(); renderJournal(); buildPrintSheet();
+document.getElementById('levelup').onclick=function(){this.classList.remove('show');};
+renderHabits(); renderAffirm(); renderSuperpower(); renderJournal(); buildPrintSheet(); renderGame();
 </script>
 </body>
 </html>
