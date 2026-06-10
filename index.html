@@ -88,6 +88,18 @@
   .kzpanel .kz-setup{color:var(--family);text-decoration:none;font-weight:600}
   .kzpanel .kz-setup:hover{text-decoration:underline}
 
+  /* Morning Brief — fed by atlas_morning_brief (written ~9 AM by the local ops pipeline), sun-gold accent */
+  .brief-panel{background:linear-gradient(135deg,rgba(245,158,11,.10),var(--card) 60%);border-color:rgba(245,158,11,.28)}
+  .brief-top3{margin:0 0 10px;padding-left:22px;display:flex;flex-direction:column;gap:8px}
+  .brief-top3 li{font-size:13.5px;line-height:1.45;color:var(--ink)}
+  .brief-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .brief-actions button{background:var(--bg2);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-size:12px;padding:7px 12px;cursor:pointer;transition:.15s}
+  .brief-actions button:hover{border-color:rgba(245,158,11,.5)}
+  .brief-full summary{font-size:12px;color:var(--muted);cursor:pointer;letter-spacing:.04em}
+  .brief-full>div{margin-top:10px;font-size:13px;line-height:1.55;color:var(--muted);background:var(--bg2);border-left:3px solid rgba(245,158,11,.45);border-radius:0 10px 10px 0;padding:12px 14px;max-height:420px;overflow:auto}
+  .brief-full h3{font-size:13px;color:var(--ink);margin:12px 0 6px}
+  .brief-full b{color:var(--ink)}
+
   /* Sunday Review — weekly reflection, Spirit-purple accent */
   .sunday-review{background:linear-gradient(180deg,rgba(167,139,250,.06),var(--card));border-color:rgba(167,139,250,.22)}
   .sunday-review h2 .sr-eye{color:var(--spirit)}
@@ -415,6 +427,16 @@
     <h2 style="padding:0 2px">The Rhythm</h2>
     <p class="lead" style="padding:0 2px">Color = pillar. ⭐ = part of your Floor. The glowing block is where you are right now — just do that one.</p>
     <div id="timeline"></div>
+  </div>
+
+  <div class="panel brief-panel" id="briefpanel" style="display:none">
+    <h2>🌅 Morning Brief</h2>
+    <p class="lead">Generated at 9 AM from your projects, leads, and memory. Suggested big rocks — adopt them or ignore them.</p>
+    <ol class="brief-top3" id="brieftop3"></ol>
+    <div class="brief-actions">
+      <button type="button" id="briefadopt">Adopt as Today's Top 3</button>
+      <details class="brief-full"><summary>Read the full brief</summary><div id="brieffull"></div></details>
+    </div>
   </div>
 
   <div class="panel top3">
@@ -1916,6 +1938,54 @@ boot();
     } catch(err){ console.warn('[atlas-st] pull failed', err); }
   }
 
+  /* ---- Morning Brief: atlas_morning_brief is written ~9 AM by the local ops
+     pipeline (brief.py, service-role). We only read our own row for today (RLS).
+     Rendered with safe DOM methods (textContent) — no innerHTML, no XSS surface.
+     "Adopt" writes through the normal top3 input path so the app's own
+     save/sync logic stays the source of truth. ---- */
+  function briefInline(parent, text){
+    // Renders "a **b** c" as text + <b> children using textContent only.
+    String(text||'').split(/\*\*(.+?)\*\*/g).forEach(function(part, i){
+      if(i % 2){ var b=document.createElement('b'); b.textContent=part; parent.appendChild(b); }
+      else if(part){ parent.appendChild(document.createTextNode(part)); }
+    });
+  }
+  function briefRender(container, md){
+    while(container.firstChild) container.removeChild(container.firstChild);
+    String(md||'').split('\n').forEach(function(line){
+      var el;
+      if(/^#+\s/.test(line)){ el=document.createElement('h3'); briefInline(el, line.replace(/^#+\s*/,'')); }
+      else if(/^---/.test(line)){ el=document.createElement('hr'); el.style.cssText='border:none;border-top:1px solid var(--line)'; }
+      else if(/^\s*-\s/.test(line)){ el=document.createElement('div'); el.appendChild(document.createTextNode('• ')); briefInline(el, line.replace(/^\s*-\s*/,'')); }
+      else if(!line.trim()){ el=document.createElement('div'); el.style.height='6px'; }
+      else { el=document.createElement('div'); briefInline(el, line); }
+      container.appendChild(el);
+    });
+  }
+  async function briefPull(){
+    var res = await SB.from('atlas_morning_brief').select('top3,brief_md')
+      .eq('user_id', sync.userId).eq('date', dkey()).maybeSingle();
+    if(!res || !res.data) return;
+    var top3 = Array.isArray(res.data.top3) ? res.data.top3 : [];
+    var ol = document.getElementById('brieftop3');
+    while(ol.firstChild) ol.removeChild(ol.firstChild);
+    top3.forEach(function(t){
+      var li=document.createElement('li'); li.textContent=String(t); ol.appendChild(li);
+    });
+    briefRender(document.getElementById('brieffull'), res.data.brief_md);
+    document.getElementById('briefadopt').onclick = function(){
+      var ids = ['t3a','t3b','t3c'];
+      var hasExisting = ids.some(function(id){ return (document.getElementById(id).value||'').trim(); });
+      if(hasExisting && !confirm("Replace your current Top 3 with the brief's suggestions?")) return;
+      ids.forEach(function(id,i){
+        var el = document.getElementById(id);
+        el.value = top3[i] || '';
+        el.dispatchEvent(new Event('input'));
+      });
+    };
+    document.getElementById('briefpanel').style.display = '';
+  }
+
   /* ---- boot: sign in (anon), pull, migrate, push anything pending ---- */
   async function bootSync(){
     try {
@@ -1949,6 +2019,9 @@ boot();
           }
         }
       } catch(err){ console.warn('[atlas-sync] kenzie_settings fetch failed', err); }
+
+      // Morning Brief: today's ops brief (if the 9 AM pipeline has run).
+      try { await briefPull(); } catch(err){ console.warn('[atlas-brief] fetch failed', err); }
 
       // Atlas journal: pull cloud copy so new devices see your past entries.
       await ajPullAll();
