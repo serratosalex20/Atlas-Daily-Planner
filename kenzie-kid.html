@@ -95,6 +95,13 @@
   .afm-tap:active{transform:scale(.97)}
   .afm-sess.done .afm-tap{background:var(--green);color:#16130E}
   .afm-reset{background:none;border:0;color:var(--faint);font-size:12px;cursor:pointer;text-decoration:underline;display:block;margin:8px auto 0}
+  .afm-add{display:flex;gap:7px;margin-bottom:14px}
+  .afm-add input{flex:1;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:9px 11px;color:var(--ink);font:inherit;font-size:14px}
+  .afm-add input:focus{outline:none;border-color:var(--coral)}
+  .afm-add button{flex:none;background:var(--coral);color:#2a1310;border:0;border-radius:11px;padding:9px 15px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+  .afm-list li.custom{display:flex;align-items:center;gap:8px}
+  .afm-list li.custom span{flex:1}
+  .afm-del{flex:none;background:none;border:0;color:var(--faint);font-size:18px;line-height:1;cursor:pointer}
 
   /* Printable weekly fridge sheet — hidden on screen, shown only when printing */
   .printsheet{display:none}
@@ -139,6 +146,7 @@
     <h2>🌟 My Affirmations</h2>
     <p class="lead">Say these out loud — like you really mean it — in the morning and at night. Your words become your world. 💛</p>
     <ul class="afm-list" id="afm-list"></ul>
+    <div class="afm-add"><input id="afm-input" placeholder="Write your own affirmation…" maxlength="90"><button id="afm-addbtn">+ Add</button></div>
     <div class="afm-goal">Say them: <button data-g="5" id="afm-g5">5×</button> <button data-g="10" id="afm-g10">10×</button></div>
     <div class="afm-sessions" id="afm-sessions"></div>
   </div>
@@ -314,18 +322,17 @@ function shareToDad(){
 }
 
 /* ---- affirmations: say them N times, morning + night, check off ---- */
-var AFFIRMATIONS = [
-  'I am brave, even when I feel scared.',
-  'I can do hard things.',
-  'I am kind, and my kindness makes the world better.',
-  'I get smarter and stronger every time I try.',
-  'My voice matters — I can speak up and say no.',
-  'I am enough, exactly as I am.',
-  'I choose to keep going. I never quit on myself.',
-  'I am loved, and I am made for great things.'
+var AFFIRMATION_SETS = [
+  ['I am brave, even when I feel scared.','I can do hard things.','I am kind, and my kindness makes the world better.','I get smarter and stronger every time I try.','My voice matters — I can speak up and say no.','I am enough, exactly as I am.','I choose to keep going. I never quit on myself.','I am loved, and I am made for great things.'],
+  ['I believe in myself, and I trust my choices.','I am confident, and I stand tall.','Mistakes help me grow — I am not afraid to try.','I am strong in my body and my mind.','I deserve good things, and I work for them.','I am proud of who I am becoming.','I face hard things with a brave heart.','I am the author of my own story.'],
+  ['I am calm, and I can handle big feelings.','I treat myself with kindness and patience.','I breathe, and I choose peace.','I am a good friend, and I am worthy of good friends.','I trust my heart and my gut.','I forgive myself when I fall short.','I spread kindness wherever I go.','I am grateful for today.'],
+  ['My dreams are worth chasing.','I get a little better every single day.','I am curious, and I love to learn.','Hard work makes me unstoppable.','I can learn anything I set my mind to.','I am creative, and my ideas matter.','I turn "I can\'t" into "I can\'t YET."','My future is bright, and I am ready for it.']
 ];
-S.affirm = S.affirm || {};            // { 'YYYY-MM-DD': { am:Number, pm:Number } }
-S.affirmGoal = S.affirmGoal || 5;     // 5 or 10
+S.customAffirm = S.customAffirm || [];   // her own affirmations
+S.affirm = S.affirm || {};               // { 'YYYY-MM-DD': { am:Number, pm:Number } }
+S.affirmGoal = S.affirmGoal || 5;        // 5 or 10
+// Rotate the active set every 30 days so it stays fresh.
+function activeSetIndex(){ return Math.floor(Math.floor(Date.now()/86400000)/30) % AFFIRMATION_SETS.length; }
 function affirmToday(){ var d=dkey(); S.affirm[d]=S.affirm[d]||{am:0,pm:0}; return S.affirm[d]; }
 function setGoal(g){ S.affirmGoal=g; save(); renderAffirm(); }
 function tapAffirm(sess){
@@ -335,7 +342,16 @@ function tapAffirm(sess){
 }
 function renderAffirm(){
   var list=document.getElementById('afm-list');
-  if(list){ list.textContent=''; AFFIRMATIONS.forEach(function(a){ var li=document.createElement('li'); li.textContent='“'+a+'”'; list.appendChild(li); }); }
+  if(list){ list.textContent='';
+    AFFIRMATION_SETS[activeSetIndex()].forEach(function(a){ var li=document.createElement('li'); li.textContent='“'+a+'”'; list.appendChild(li); });
+    (S.customAffirm||[]).forEach(function(a,idx){
+      var li=document.createElement('li'); li.className='custom';
+      var sp=document.createElement('span'); sp.textContent='“'+a+'”'; li.appendChild(sp);
+      var del=document.createElement('button'); del.className='afm-del'; del.textContent='×'; del.title='Remove';
+      del.addEventListener('click',function(){ S.customAffirm.splice(idx,1); save(); renderAffirm(); });
+      li.appendChild(del); list.appendChild(li);
+    });
+  }
   var g5=document.getElementById('afm-g5'), g10=document.getElementById('afm-g10');
   if(g5) g5.classList.toggle('on', S.affirmGoal===5);
   if(g10) g10.classList.toggle('on', S.affirmGoal===10);
@@ -374,6 +390,11 @@ document.getElementById('hb-print').onclick=function(){buildPrintSheet();window.
 document.getElementById('share').onclick=shareToDad;
 document.getElementById('afm-g5').onclick=function(){setGoal(5);};
 document.getElementById('afm-g10').onclick=function(){setGoal(10);};
+document.getElementById('afm-addbtn').onclick=function(){
+  var inp=document.getElementById('afm-input'), v=(inp.value||'').trim();
+  if(!v){ toast('Write your affirmation first 💛'); return; }
+  S.customAffirm=S.customAffirm||[]; S.customAffirm.push(v); inp.value=''; save(); renderAffirm(); toast('Added your own! 🌟');
+};
 
 renderHabits(); renderAffirm(); renderSuperpower(); renderJournal(); buildPrintSheet();
 </script>
