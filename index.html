@@ -1992,6 +1992,20 @@ boot();
       var sess = await SB.auth.getSession();
       var session = sess && sess.data && sess.data.session;
       if(!session){
+        // ROOT-CAUSE GUARD for the ghost-identity pileup: if this device has ever
+        // held a REAL (email) account, do NOT silently mint a fresh anonymous user
+        // on a cold start where the session didn't persist (common on iOS PWAs).
+        // That behaviour is exactly what stranded data across orphaned anon ids.
+        // Instead stay signed out and let the Account panel prompt a one-tap
+        // "Sign in with email". Anonymous auto-signin is reserved for genuinely
+        // first-time visitors who have never claimed an account.
+        var priorEmail = '';
+        try { priorEmail = localStorage.getItem('atlas_account_email') || ''; } catch(_){}
+        if(priorEmail){
+          console.info('[atlas-sync] no session + prior account ('+priorEmail+') → awaiting email sign-in; NOT creating an anon user.');
+          if(typeof renderAccount === 'function') renderAccount();
+          return;   // app still runs cache-only on local data until they sign in
+        }
         var signin = await SB.auth.signInAnonymously();
         if(signin.error){
           console.warn('[atlas-sync] anon sign-in failed (is the provider enabled in dashboard?)', signin.error);
@@ -2000,6 +2014,13 @@ boot();
         session = signin.data.session;
       }
       sync.userId = session.user.id; syncSave();
+      // Remember a real identity so future cold-starts hit the guard above instead
+      // of spawning a new ghost. Anonymous sessions never set this marker.
+      try {
+        if(session.user && session.user.email && session.user.is_anonymous === false){
+          localStorage.setItem('atlas_account_email', session.user.email);
+        }
+      } catch(_){}
 
       await pullAndMerge();
       if(!sync.migrated) await migrateLocalToCloud();
@@ -2173,10 +2194,19 @@ boot();
     var email = acctUser && acctUser.email;            // anon users have no email
     var claimRow  = document.getElementById('acct-claim');
     var signinRow = document.getElementById('acct-signin-row');
+    var priorEmail = '';
+    try { priorEmail = localStorage.getItem('atlas_account_email') || ''; } catch(_){}
     if(email){
       stateEl.textContent = '🔒 Saved as ' + email + ' — your data is safe and syncs across devices.';
       if(claimRow)  claimRow.style.display  = 'none';
       if(signinRow) signinRow.style.display = 'none';
+    } else if(priorEmail){
+      // Returning owner whose session didn't persist (iOS PWA eviction). One tap to reload.
+      stateEl.textContent = '👋 Welcome back — you\'re signed out on this device. Tap “Sign in with email” to reload your account (' + priorEmail + ').';
+      if(claimRow)  claimRow.style.display  = 'none';
+      if(signinRow) signinRow.style.display = '';
+      var pf = document.getElementById('acct-email');
+      if(pf && !pf.value) pf.value = priorEmail;       // prefill so sign-in is a single tap
     } else {
       stateEl.textContent = '⚠ Guest mode — your data lives ONLY on this device. Save your account so a cache-clear or new phone can’t wipe it.';
       if(claimRow)  claimRow.style.display  = '';
@@ -2217,7 +2247,16 @@ boot();
   try {
     SB.auth.onAuthStateChange(function(_ev, session){
       acctUser = session ? session.user : null;
-      if(session && session.user){ sync.userId = session.user.id; syncSave(); }
+      if(session && session.user){
+        sync.userId = session.user.id; syncSave();
+        // Persist a durable marker of a real identity so bootSync's cold-start
+        // guard knows this device belongs to a claimed account (stops ghost re-anon).
+        try {
+          if(session.user.email && session.user.is_anonymous === false){
+            localStorage.setItem('atlas_account_email', session.user.email);
+          }
+        } catch(_){}
+      }
       renderAccount();
     });
   } catch(_){}
