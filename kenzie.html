@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Compass">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="kenzie-manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -143,6 +143,47 @@
 
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--family);color:#2a1010;font-weight:700;font-size:13.5px;padding:11px 18px;border-radius:999px;z-index:60;opacity:0;transition:.3s;pointer-events:none;text-align:center;max-width:90%}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  /* ===== Daily Habits tracker (Good Habits & Values Workbook) ===== */
+  .habits .hb-date{font-size:13px;color:var(--muted);margin:-2px 0 12px;font-weight:600}
+  .hb-list{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px}
+  .hb-item{display:flex;align-items:center;gap:12px;padding:12px 13px;background:var(--card);border:1px solid var(--line);border-radius:13px;cursor:pointer;transition:.15s;user-select:none}
+  .hb-item:active{transform:scale(.99)}
+  .hb-item.done{background:rgba(143,197,107,.10);border-color:rgba(143,197,107,.42)}
+  .hb-box{flex:none;width:26px;height:26px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;font-size:15px;font-weight:800;color:var(--money);transition:.15s}
+  .hb-item.done .hb-box{background:var(--money);border-color:var(--money);color:#16130E}
+  .hb-emoji{flex:none;font-size:20px;line-height:1}
+  .hb-tx{font-size:14.5px;line-height:1.3;color:var(--ink)}
+  .hb-item.done .hb-tx{color:var(--muted)}
+  .hb-points{background:var(--bg2);border:1px solid var(--line);border-radius:13px;padding:12px 14px;margin-bottom:14px}
+  .hb-ptline{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:9px}
+  .hb-ladder{display:flex;flex-wrap:wrap;gap:7px}
+  .hb-tier{font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--muted)}
+  .hb-tier.hit{background:var(--gold);border-color:var(--gold);color:#2a210f}
+  .hb-values h3{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+  .hb-vals{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+  .hb-val{font-size:12px;font-weight:600;padding:6px 11px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--ink)}
+  .hb-actions{display:flex;gap:9px}
+
+  /* ===== Printable one-page weekly sheet — hidden on screen, shown only when printing ===== */
+  .printsheet{display:none}
+  @media print{
+    body{background:#fff!important;color:#000!important}
+    body>*:not(.printsheet){display:none!important}
+    .printsheet{display:block!important;padding:0 6px;font-family:Georgia,'Times New Roman',serif;color:#111}
+    .printsheet h1{font-size:21px;margin:0 0 4px;text-align:center}
+    .printsheet .ps-sub{text-align:center;font-size:12px;color:#444;margin:0 0 16px}
+    .ps-grid{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:12px}
+    .ps-grid th,.ps-grid td{border:1px solid #333;padding:7px 6px;text-align:center}
+    .ps-grid th:first-child,.ps-grid td:first-child{text-align:left;width:44%}
+    .ps-grid thead th{background:#efefef}
+    .ps-grid td.box{height:22px}
+    .ps-cols{display:flex;gap:26px}
+    .ps-cols>div{flex:1}
+    .ps-cols h2{font-size:14px;margin:0 0 6px;border-bottom:1px solid #999;padding-bottom:3px}
+    .ps-cols ul{margin:0 0 14px;padding-left:18px;font-size:12.5px;line-height:1.7}
+    .ps-cols p{margin:8px 0 2px;font-size:12.5px}
+    .ps-line{border-bottom:1px solid #aaa;height:18px;margin:2px 0 8px}
+  }
 </style>
 </head>
 <body>
@@ -182,6 +223,22 @@
     </div>
   </div>
 
+  <!-- Daily Habits (Good Habits & Values Workbook) -->
+  <div class="panel habits" id="habitspanel">
+    <h2>Today's Habits</h2>
+    <p class="lead">Check these off every day, Kenzie. Small things done daily make you strong, happy, and unstoppable. 💪</p>
+    <div class="hb-date" id="hb-date"></div>
+    <ul class="hb-list" id="hb-list"></ul>
+    <div class="hb-points" id="hb-points"></div>
+    <div class="hb-values">
+      <h3>💎 Live by these</h3>
+      <div class="hb-vals" id="hb-vals"></div>
+    </div>
+    <div class="hb-actions">
+      <button class="btn ghost" id="hb-print">🖨️ Print weekly fridge sheet</button>
+    </div>
+  </div>
+
   <!-- The Eight -->
   <div class="panel">
     <h2>The Eight</h2>
@@ -217,6 +274,30 @@
   <div class="footnote">
     Built by Atlas for Alex, in service of Kenzie.<br>
     <b>A compass, not a checklist. Return to it. Don't finish it.</b>
+  </div>
+</div>
+
+<!-- Printable one-page weekly habits sheet (fridge-ready). Hidden on screen; fills the page when printing. -->
+<div class="printsheet" id="printsheet">
+  <h1>🌟 Kenzie's Good Habits — Week of ______________</h1>
+  <p class="ps-sub">Check a box each day you do it. Small habits, every day, build a strong and happy you. 💪</p>
+  <table class="ps-grid">
+    <thead><tr><th>Habit</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr></thead>
+    <tbody id="ps-rows"></tbody>
+  </table>
+  <div class="ps-cols">
+    <div>
+      <h2>💎 Live by these</h2>
+      <ul id="ps-values"></ul>
+      <h2>🎁 Rewards</h2>
+      <ul><li>10 points = 🍦 small treat (ice cream, movie night)</li><li>20 points = 🎉 special reward (pick a family activity)</li><li>30 points = 🏆 big reward (day trip / special experience)</li></ul>
+    </div>
+    <div>
+      <h2>🌟 Weekly reflection</h2>
+      <p>What went really well this week?</p><div class="ps-line"></div><div class="ps-line"></div>
+      <p>What did I learn?</p><div class="ps-line"></div>
+      <p>How did I show kindness, courage, or responsibility?</p><div class="ps-line"></div>
+    </div>
   </div>
 </div>
 
@@ -501,6 +582,85 @@ sync.dirtyProgress = sync.dirtyProgress || {};
 sync.dirtySettings = !!sync.dirtySettings;
 sync.pendingJournal = sync.pendingJournal || [];
 
+/* ============ DAILY HABITS (Good Habits & Values Workbook) ============
+   Lightweight, LOCAL-ONLY daily tracker for Kenzie (stored in state.habits, not
+   cloud-synced — it lives on her device). state.habits = { 'YYYY-MM-DD': {key:true} }. */
+state.habits = state.habits || {};
+var HABITS = [
+  {k:'bed',    e:'🛏️', t:'Make my bed'},
+  {k:'grat',   e:'🙏', t:'Write 3 things I\'m grateful for'},
+  {k:'move',   e:'🤸', t:'5–10 min of movement (stretch, yoga, jumping jacks)'},
+  {k:'eat',    e:'🥗', t:'Eat healthy meals (fruits, veggies, protein)'},
+  {k:'read',   e:'📚', t:'15–20 minutes of reading'},
+  {k:'create', e:'🎨', t:'Practice a creative skill (draw, music, write, code)'},
+  {k:'duty',   e:'✅', t:'Homework + chores before free time'},
+  {k:'reflect',e:'🌙', t:'Journal or pray before bed'}
+];
+var KZ_VALUES = [
+  {e:'🙏',t:'Gratitude'},{e:'🛡️',t:'Integrity'},{e:'💗',t:'Kindness'},{e:'💪',t:'Resilience'},
+  {e:'✅',t:'Responsibility'},{e:'🌱',t:'Growth Mindset'},{e:'✨',t:'Faith'}
+];
+function habitWeekStart(now){ now=now||new Date(); var d=new Date(now.getFullYear(),now.getMonth(),now.getDate()); var off=(d.getDay()+6)%7; d.setDate(d.getDate()-off); return d; }
+function habitWeekPoints(){
+  var ws=habitWeekStart(), total=0;
+  Object.keys(state.habits||{}).forEach(function(dk){
+    var dt=new Date(dk+'T00:00:00'); if(isNaN(dt)) return;
+    if(dt>=ws){ var day=state.habits[dk]||{}; total+=Object.keys(day).filter(function(x){return day[x];}).length; }
+  });
+  return total;
+}
+function toggleHabit(k){
+  var d=dkey(); state.habits[d]=state.habits[d]||{};
+  if(state.habits[d][k]){ delete state.habits[d][k]; } else { state.habits[d][k]=true; }
+  saveCache(); renderHabits();
+  var checks=state.habits[d]||{};
+  if(HABITS.every(function(h){return checks[h.k];})){ toast('All habits done today! 🌟 Amazing, Kenzie!'); }
+}
+function renderHabits(){
+  var dEl=document.getElementById('hb-date'); if(!dEl) return;
+  var today=dkey(); var checks=(state.habits&&state.habits[today])||{};
+  dEl.textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  var list=document.getElementById('hb-list'); list.textContent='';
+  HABITS.forEach(function(h){
+    var li=document.createElement('li'); li.className='hb-item'+(checks[h.k]?' done':'');
+    li.addEventListener('click',function(){ toggleHabit(h.k); });
+    var box=document.createElement('span'); box.className='hb-box'; box.textContent=checks[h.k]?'✓':'';
+    var em=document.createElement('span'); em.className='hb-emoji'; em.textContent=h.e;
+    var tx=document.createElement('span'); tx.className='hb-tx'; tx.textContent=h.t;
+    li.appendChild(box); li.appendChild(em); li.appendChild(tx); list.appendChild(li);
+  });
+  var doneToday=HABITS.filter(function(h){return checks[h.k];}).length;
+  var pts=habitWeekPoints();
+  var pEl=document.getElementById('hb-points'); pEl.textContent='';
+  var line=document.createElement('div'); line.className='hb-ptline';
+  line.textContent='Today: '+doneToday+'/'+HABITS.length+'    ·    This week: '+pts+' points ⭐';
+  pEl.appendChild(line);
+  var ladder=document.createElement('div'); ladder.className='hb-ladder';
+  [{p:10,t:'🍦 small treat'},{p:20,t:'🎉 special'},{p:30,t:'🏆 big reward'}].forEach(function(tr){
+    var c=document.createElement('span'); c.className='hb-tier'+(pts>=tr.p?' hit':'');
+    c.textContent=tr.p+' = '+tr.t+(pts>=tr.p?' ✓':''); ladder.appendChild(c);
+  });
+  pEl.appendChild(ladder);
+  var v=document.getElementById('hb-vals'); if(v){ v.textContent='';
+    KZ_VALUES.forEach(function(val){ var c=document.createElement('span'); c.className='hb-val'; c.textContent=val.e+' '+val.t; v.appendChild(c); });
+  }
+}
+function buildPrintSheet(){
+  var rows=document.getElementById('ps-rows');
+  if(rows){ rows.textContent='';
+    HABITS.forEach(function(h){
+      var tr=document.createElement('tr');
+      var td=document.createElement('td'); td.textContent=h.e+' '+h.t; tr.appendChild(td);
+      for(var i=0;i<7;i++){ var c=document.createElement('td'); c.className='box'; tr.appendChild(c); }
+      rows.appendChild(tr);
+    });
+  }
+  var pv=document.getElementById('ps-values');
+  if(pv){ pv.textContent='';
+    KZ_VALUES.forEach(function(val){ var li=document.createElement('li'); li.textContent=val.e+' '+val.t; pv.appendChild(li); });
+  }
+}
+
 /* ============ THIS WEEK'S FOCUS (deterministic rotation) ============ */
 function thisWeekFocus(now){
   now = now || new Date();
@@ -645,6 +805,7 @@ function renderJournal(){
 
 function renderAll(){
   renderAgeSub();
+  renderHabits();
   renderWeekFocus();
   renderSections();
   renderTimeline();
@@ -716,6 +877,8 @@ function deleteJournal(id){
 
 /* ============ UI WIRES ============ */
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(window._t);window._t=setTimeout(function(){t.classList.remove('show');},2400);}
+/* Habits: wire the "Print weekly fridge sheet" button + pre-build the sheet once. */
+(function(){ var b=document.getElementById('hb-print'); if(b){ b.onclick=function(){ buildPrintSheet(); window.print(); }; } buildPrintSheet(); })();
 document.getElementById('bdaysave').onclick = function(){
   var v = document.getElementById('bdayinput').value;
   if(!v){ toast('Pick a date.'); return; }

@@ -1,0 +1,14 @@
+{
+  "name": "Kenzie Compass",
+  "short_name": "Compass",
+  "description": "Kenzie's growth compass — daily habits, values, and her journey.",
+  "start_url": "kenzie.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#16130E",
+  "theme_color": "#16130E",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
