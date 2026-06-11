@@ -64,6 +64,8 @@
   .btn.share{background:var(--coral);color:#2a1310;margin-top:4px}
   .bk-row{display:flex;gap:9px;margin-top:4px}
   .bk-row .btn{flex:1}
+  .connect{font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--card);border:1px solid var(--line);border-left:3px solid var(--coral);border-radius:0 12px 12px 0;padding:11px 13px;margin-bottom:12px}
+  .connect b{color:var(--coral)}
   .saverow{display:flex;gap:9px;justify-content:flex-end;margin-top:10px}
   .entries{margin-top:14px;display:grid;gap:9px}
   .entry{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 13px}
@@ -262,6 +264,7 @@
   <div class="panel">
     <h2>📤 Share with Dad</h2>
     <p class="lead">Send Dad a peek at how your habits are going this week. It only sends your habit progress — <b>never your journal.</b></p>
+    <div class="connect" id="connect"></div>
     <button class="btn share full" id="share">📤 Send my progress to Dad</button>
   </div>
 
@@ -398,6 +401,32 @@ function myHabits(){var extra=(S.growthAdded||[]).map(growthByKey).filter(Boolea
 function addGrowth(k){if(!isGrowthKey(k))return;S.growthAdded=S.growthAdded||[];if(S.growthAdded.indexOf(k)<0){S.growthAdded.push(k);save();renderHabits();renderGame();toast('Added to your Compass! ✦');}}
 function removeGrowth(k){S.growthAdded=(S.growthAdded||[]).filter(function(x){return x!==k;});save();renderHabits();renderGame();}
 
+/* ---- Dad <-> Kenzie connection: a weekly 'do together' idea (family pillar) ---- */
+var CONNECT_IDEAS=[
+  'Cook dinner together — I pick the recipe',
+  'Bike ride or walk somewhere new',
+  'Movie night — my turn to choose',
+  'Teach me something you’re good at',
+  'Let me teach YOU something I love',
+  'Board game or card tournament',
+  'Go get ice cream and just talk',
+  'Build or make something together',
+  'A little road-trip adventure',
+  'Shoot hoops or play catch',
+  'Stargazing or a night walk',
+  'Bake a treat and share it',
+  'Draw or paint side by side',
+  'Plan our dream day out loud',
+  'Do a kind thing for someone — together',
+  'Music time: play, sing, or find new songs'
+];
+function weekConnect(){return CONNECT_IDEAS[(isoWeek(new Date())-1)%CONNECT_IDEAS.length];}
+function renderConnect(){
+  var el=document.getElementById('connect'); if(!el) return; el.textContent='';
+  var b=document.createElement('b'); b.textContent='This week with Dad 💛 '; el.appendChild(b);
+  el.appendChild(document.createTextNode(weekConnect()));
+}
+
 function weekPoints(){var ws=weekStart(),tot=0;Object.keys(S.habits).forEach(function(dk){var dt=new Date(dk+'T00:00:00');if(isNaN(dt))return;if(dt>=ws){var day=S.habits[dk]||{};tot+=Object.keys(day).filter(function(x){return day[x];}).length;}});return tot;}
 function daysActive(){var ws=weekStart(),n=0;Object.keys(S.habits).forEach(function(dk){var dt=new Date(dk+'T00:00:00');if(isNaN(dt))return;if(dt>=ws){var day=S.habits[dk]||{};if(Object.keys(day).some(function(x){return day[x];}))n++;}});return n;}
 function rewardLevel(p){return p>=30?'🏆 Big reward!':p>=20?'🎉 Special reward!':p>=10?'🍦 Small treat!':'keep going 💪';}
@@ -469,13 +498,21 @@ function shareToDad(){
   var doneToday=HABITS.filter(function(h){return today[h.k];}).length;
   var at=affirmToday();
   var amTxt=(at.am>=S.affirmGoal?'✓ done':at.am+'/'+S.affirmGoal), pmTxt=(at.pm>=S.affirmGoal?'✓ done':at.pm+'/'+S.affirmGoal);
+  var st=streakCount();
+  var added=(S.growthAdded||[]).map(growthByKey).filter(Boolean);
+  var unlocked=unlockedCount();
   var body='Hi Dad! Here is my Compass progress this week 🧭\n\n'
     +'⭐ Points this week: '+pts+'\n'
     +'📅 Days I showed up: '+days+'\n'
+    +'🔥 My streak: '+st+(st===1?' day':' days')+'\n'
     +'🎁 Reward level: '+rewardLevel(pts)+'\n'
     +'✅ Today I did '+doneToday+'/8 habits\n'
-    +'🌟 Affirmations today: morning '+amTxt+' · night '+pmTxt+'\n\n'
-    +'(My journal stays private 😊)\n\nLove, Kenzie';
+    +'🌟 Affirmations today: morning '+amTxt+' · night '+pmTxt+'\n';
+  if(unlocked>0){
+    body+='✦ Powers I\'ve unlocked: '+unlocked+(added.length?(' — using: '+added.map(function(g){return g.e+' '+g.t;}).join(', ')):' (none added yet)')+'\n';
+  }
+  body+='\n💛 This week I\'d love to do with you: '+weekConnect()+'\n'
+    +'\n(My journal stays private 😊)\n\nLove, Kenzie';
   window.location.href='mailto:'+DAD_EMAIL+'?subject='+encodeURIComponent('Kenzie\'s Compass progress 🧭')+'&body='+encodeURIComponent(body);
 }
 
@@ -768,7 +805,7 @@ document.getElementById('bk-file').onchange=function(){ if(this.files&&this.file
 document.getElementById('levelup').onclick=function(){this.classList.remove('show');};
 document.getElementById('quotepop').onclick=function(){this.classList.remove('show');};
 document.getElementById('unlockpop').onclick=function(){this.classList.remove('show');};
-renderHabits(); renderAffirm(); renderSuperpower(); renderJournal(); buildPrintSheet(); renderGame();
+renderHabits(); renderAffirm(); renderSuperpower(); renderJournal(); buildPrintSheet(); renderGame(); renderConnect();
 </script>
 </body>
 </html>
