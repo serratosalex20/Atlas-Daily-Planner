@@ -103,6 +103,38 @@
   .afm-list li.custom span{flex:1}
   .afm-del{flex:none;background:none;border:0;color:var(--faint);font-size:18px;line-height:1;cursor:pointer}
 
+  /* ===== Grow Your Compass: mastery-gated developmental powers ===== */
+  .grow{background:linear-gradient(160deg,rgba(82,183,172,.14),rgba(143,197,107,.06));border-color:rgba(82,183,172,.32)}
+  .gw-prog{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:6px}
+  .gw-line{font-size:14px;font-weight:700;margin-bottom:9px}
+  .gw-line b{color:var(--teal)}
+  .gw-bar{height:10px;background:var(--bg2);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .gw-fill{height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--green));border-radius:999px;transition:width .55s cubic-bezier(.2,.9,.3,1)}
+  .gw-sub{font-size:11.5px;color:var(--faint);margin-top:7px}
+  .gw-h{font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:15px 0 8px}
+  .gw-card{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:11px 13px;margin-bottom:8px}
+  .gw-e{flex:none;font-size:21px;line-height:1}
+  .gw-b{flex:1;min-width:0}
+  .gw-t{font-size:14.5px;font-weight:700;color:var(--ink);line-height:1.25}
+  .gw-w{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.35}
+  .gw-card.locked{opacity:.5}
+  .gw-card.ready{border-color:rgba(233,184,114,.5);background:rgba(233,184,114,.08)}
+  .gw-add{flex:none;background:var(--teal);color:#0e201e;border:0;border-radius:10px;padding:8px 13px;font:inherit;font-weight:800;font-size:12.5px;cursor:pointer}
+  .gw-add:active{transform:scale(.96)}
+  .gw-rm{flex:none;background:none;border:0;color:var(--faint);font-size:18px;line-height:1;cursor:pointer}
+  .gw-lock{flex:none;font-size:11px;font-weight:700;color:var(--faint);background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:5px 10px;white-space:nowrap}
+  .hb-item.growth{background:linear-gradient(160deg,rgba(82,183,172,.10),var(--card))}
+  .hb-item.growth.done{background:rgba(143,197,107,.12)}
+  .hb-item.growth .hb-tx::after{content:' ✦';color:var(--teal);font-weight:800}
+  /* New-power unlock celebration */
+  .unlockpop{position:fixed;inset:0;background:rgba(22,19,14,.93);display:none;place-items:center;z-index:71;padding:30px;text-align:center;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+  .unlockpop.show{display:grid;animation:lufade .35s ease}
+  .ul-emoji{font-size:78px;line-height:1;animation:lupop .6s cubic-bezier(.2,1.5,.4,1)}
+  .ul-up{font-family:'Fraunces',serif;font-weight:700;font-size:13px;letter-spacing:.28em;text-transform:uppercase;color:var(--teal);margin:16px 0 6px}
+  .ul-name{font-family:'Fraunces',serif;font-weight:700;font-size:29px;color:var(--ink);margin:0 0 8px;line-height:1.2}
+  .ul-why{font-size:14px;color:var(--muted);max-width:300px;margin:0 auto;line-height:1.5}
+  .ul-tap{color:var(--faint);font-size:12px;margin-top:22px}
+
   /* ===== Game layer: level / XP bar / streak / confetti / level-up ===== */
   .gamebar{background:linear-gradient(160deg,rgba(167,139,250,.16),rgba(240,114,106,.08));border:1px solid rgba(167,139,250,.32);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px}
   .gb-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
@@ -182,6 +214,16 @@
     <button class="btn ghost full" id="hb-print">🖨️ Print my weekly sheet</button>
   </div>
 
+  <!-- Grow Your Compass: mastery-gated powers -->
+  <div class="panel grow">
+    <h2>🌱 Grow Your Compass</h2>
+    <p class="lead">Keep your 8 habits strong and you'll unlock new <b>powers</b> — one at a time, when you're ready. You choose which to add. 💫</p>
+    <div class="gw-prog" id="gw-prog"></div>
+    <div id="gw-mine"></div>
+    <div id="gw-ready"></div>
+    <div id="gw-next"></div>
+  </div>
+
   <!-- Daily affirmations -->
   <div class="panel afm">
     <h2>🌟 My Affirmations</h2>
@@ -255,6 +297,15 @@
   <div class="lu-tap">tap to close</div>
 </div></div>
 
+<!-- New power unlocked overlay -->
+<div class="unlockpop" id="unlockpop"><div class="lu-card">
+  <div class="ul-emoji" id="ul-emoji">🔓</div>
+  <div class="ul-up">New Power Unlocked</div>
+  <div class="ul-name" id="ul-name"></div>
+  <div class="ul-why" id="ul-why"></div>
+  <div class="ul-tap">tap to close</div>
+</div></div>
+
 <!-- Anime quote pop (every 5 affirmations) -->
 <div class="quotepop" id="quotepop"><div class="qp-card">
   <div class="qp-show" id="q-show">💥</div>
@@ -301,6 +352,39 @@ var VALUES = [
   {e:'✨',t:'Faith',d:'Stay connected to something bigger than you — your way.',y:'Take one quiet minute each day to breathe, pray, or reflect.'}
 ];
 
+/* ---- Grow Your Compass: mastery-gated developmental powers ----
+   The 8 core habits above are the FLOOR — they never change. As Kenzie keeps
+   them strong (a "strong day" = 6+ of the 8), she unlocks new "powers" one at a
+   time, in developmental order. Unlocking only OFFERS a power — she chooses to
+   add it (autonomy) and can remove it anytime. Progress is DERIVED from her
+   logged strong-days, so it can't be farmed. */
+var GROWTH_LIB = [
+  {k:'g_water',   e:'💧', t:'Drink water when I wake up',             w:'A strong day starts with taking care of your body first.'},
+  {k:'g_tidy',    e:'🧹', t:'Tidy one spot — desk, backpack, shelf',  w:'Order around you makes room for calm inside you.'},
+  {k:'g_screen',  e:'📵', t:'Screens off 30 min before bed',          w:'Resting your mind helps you sleep deep and wake up sharp.'},
+  {k:'g_plan',    e:'📝', t:'Plan my top 3 for tomorrow',             w:'Deciding ahead is how strong people run their day — just like Dad.'},
+  {k:'g_selftalk',e:'🗣️', t:'Catch one unkind thought & flip it',     w:'You choose how you talk to yourself. Be your own best friend.'},
+  {k:'g_practice',e:'🎯', t:'15 focused minutes on a goal',           w:'A little practice every day quietly turns into something amazing.'},
+  {k:'g_hard',    e:'💪', t:'Do one thing that scares me a little',   w:'Courage grows every time you do the brave thing anyway.'},
+  {k:'g_help',    e:'🤝', t:'Help someone before they ask',           w:'Noticing what others need is a quiet superpower.'},
+  {k:'g_feelings',e:'💭', t:'Name a big feeling instead of hiding it',w:'Feelings you can name are feelings you can handle.'},
+  {k:'g_money',   e:'💰', t:'Save or earn — be smart with money',     w:'Learning to handle money now gives you freedom later.'},
+  {k:'g_own',     e:'⏰', t:'Get up on my own alarm',                 w:'Running your own mornings is what growing up feels like.'},
+  {k:'g_mentor',  e:'🌟', t:'Teach or encourage someone else',        w:'The strongest people lift others up. Now you guide too.'}
+];
+var UNLOCK_AT = [8,18,32,50,72,98,128,162,200,242,288,338]; // strong days to unlock power N (escalating, on purpose)
+var CORE_KEYS = HABITS.map(function(h){return h.k;});
+S.growthAdded = (S.growthAdded||[]).filter(function(k){return GROWTH_LIB.some(function(g){return g.k===k;});});
+S.growthSeen = S.growthSeen || 0;
+function isGrowthKey(k){return GROWTH_LIB.some(function(g){return g.k===k;});}
+function growthByKey(k){for(var i=0;i<GROWTH_LIB.length;i++)if(GROWTH_LIB[i].k===k)return GROWTH_LIB[i];return null;}
+function coreDoneOn(dk){var day=S.habits[dk]||{};return CORE_KEYS.filter(function(k){return day[k];}).length;}
+function growthDays(){var n=0;Object.keys(S.habits).forEach(function(dk){if(coreDoneOn(dk)>=6)n++;});return n;}
+function unlockedCount(){var g=growthDays(),n=0;for(var i=0;i<GROWTH_LIB.length;i++){if(g>=UNLOCK_AT[i])n++;else break;}return n;}
+function myHabits(){var extra=(S.growthAdded||[]).map(growthByKey).filter(Boolean);return HABITS.concat(extra);}
+function addGrowth(k){if(!isGrowthKey(k))return;S.growthAdded=S.growthAdded||[];if(S.growthAdded.indexOf(k)<0){S.growthAdded.push(k);save();renderHabits();renderGame();toast('Added to your Compass! ✦');}}
+function removeGrowth(k){S.growthAdded=(S.growthAdded||[]).filter(function(x){return x!==k;});save();renderHabits();renderGame();}
+
 function weekPoints(){var ws=weekStart(),tot=0;Object.keys(S.habits).forEach(function(dk){var dt=new Date(dk+'T00:00:00');if(isNaN(dt))return;if(dt>=ws){var day=S.habits[dk]||{};tot+=Object.keys(day).filter(function(x){return day[x];}).length;}});return tot;}
 function daysActive(){var ws=weekStart(),n=0;Object.keys(S.habits).forEach(function(dk){var dt=new Date(dk+'T00:00:00');if(isNaN(dt))return;if(dt>=ws){var day=S.habits[dk]||{};if(Object.keys(day).some(function(x){return day[x];}))n++;}});return n;}
 function rewardLevel(p){return p>=30?'🏆 Big reward!':p>=20?'🎉 Special reward!':p>=10?'🍦 Small treat!':'keep going 💪';}
@@ -316,8 +400,9 @@ function renderHabits(){
   var today=dkey(); var checks=S.habits[today]||{};
   document.getElementById('hb-date').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
   var list=document.getElementById('hb-list'); list.textContent='';
-  HABITS.forEach(function(h){
-    var li=document.createElement('li'); li.className='hb-item'+(checks[h.k]?' done':'');
+  myHabits().forEach(function(h){
+    var g=isGrowthKey(h.k);
+    var li=document.createElement('li'); li.className='hb-item'+(g?' growth':'')+(checks[h.k]?' done':'');
     li.addEventListener('click',function(){toggleHabit(h.k,li);});
     var box=document.createElement('span');box.className='hb-box';box.textContent=checks[h.k]?'✓':'';
     var em=document.createElement('span');em.className='hb-emoji';em.textContent=h.e;
@@ -336,6 +421,7 @@ function renderHabits(){
     c.textContent=tr.p+' = '+tr.t+(pts>=tr.p?' ✓':'');ladder.appendChild(c);
   });
   pEl.appendChild(ladder);
+  renderGrow();
 }
 function renderSuperpower(){
   var v=VALUES[(isoWeek(new Date())-1)%VALUES.length];
@@ -448,7 +534,13 @@ S.streakSeen = S.streakSeen || 0;
 // XP is DERIVED from her data (so toggling off removes it — no farming). Weighted by leverage.
 function computeXP(){
   var xp=0;
-  Object.keys(S.habits).forEach(function(dk){var day=S.habits[dk]||{};var n=Object.keys(day).filter(function(x){return day[x];}).length;xp+=n*10;if(n>=8)xp+=40;});
+  Object.keys(S.habits).forEach(function(dk){
+    var day=S.habits[dk]||{};
+    var nc=CORE_KEYS.filter(function(k){return day[k];}).length;                       // core habits
+    var ng=Object.keys(day).filter(function(k){return day[k]&&isGrowthKey(k);}).length; // growth powers
+    xp+=nc*10; if(nc>=8)xp+=40;   // all-8 bonus is CORE only
+    xp+=ng*12;                    // powers are higher-leverage
+  });
   Object.keys(S.affirm).forEach(function(dk){var a=S.affirm[dk]||{};if((a.am||0)>=5)xp+=25;if((a.pm||0)>=5)xp+=25;});
   xp+=(S.journal||[]).length*15;
   return xp;
@@ -511,6 +603,69 @@ function renderGame(){
   if(hit>S.streakSeen){S.streakSeen=hit;save();toast('🔥 '+hit+'-day streak! You\'re on fire, Kenzie!');confettiBurst(innerWidth/2,innerHeight*0.4);}
   else if(st<3 && S.streakSeen!==0){S.streakSeen=0;save();}
 }
+function gwCard(g,kind,onBtn,btnLabel){
+  var c=document.createElement('div'); c.className='gw-card'+(kind?' '+kind:'');
+  var e=document.createElement('span'); e.className='gw-e'; e.textContent=g.e;
+  var bd=document.createElement('div'); bd.className='gw-b';
+  var t=document.createElement('div'); t.className='gw-t'; t.textContent=g.t; bd.appendChild(t);
+  if(kind==='ready'){ var w=document.createElement('div'); w.className='gw-w'; w.textContent=g.w; bd.appendChild(w); }
+  c.appendChild(e); c.appendChild(bd);
+  if(onBtn){ var b=document.createElement('button'); b.className=(btnLabel==='×'?'gw-rm':'gw-add'); b.textContent=btnLabel; if(btnLabel==='×')b.title='Remove'; b.addEventListener('click',onBtn); c.appendChild(b); }
+  else if(kind==='locked'){ var lk=document.createElement('span'); lk.className='gw-lock'; lk.textContent=btnLabel; c.appendChild(lk); }
+  return c;
+}
+function renderGrow(){
+  var prog=document.getElementById('gw-prog'); if(!prog) return;
+  var strong=growthDays(), unlocked=unlockedCount(), all=unlocked>=GROWTH_LIB.length;
+  // celebrate a newly-unlocked power once
+  if(unlocked>S.growthSeen){ var idx=S.growthSeen; S.growthSeen=unlocked; save(); showUnlock(GROWTH_LIB[idx]); }
+  else if(unlocked<S.growthSeen){ S.growthSeen=unlocked; save(); }
+  // progress header + bar
+  prog.textContent='';
+  var line=document.createElement('div'); line.className='gw-line';
+  if(all){ line.textContent='🌟 Every power unlocked — you are a force, Kenzie!'; }
+  else{
+    var need=UNLOCK_AT[unlocked], left=Math.max(0,need-strong);
+    line.appendChild(document.createTextNode(strong+' strong '+(strong===1?'day':'days')+'  ·  '));
+    var b=document.createElement('b'); b.textContent=(left===0?'new power ready!':left+' to your next power'); line.appendChild(b);
+  }
+  prog.appendChild(line);
+  var bar=document.createElement('div'); bar.className='gw-bar';
+  var fill=document.createElement('div'); fill.className='gw-fill';
+  var prev=unlocked>0?UNLOCK_AT[unlocked-1]:0, nxt=all?strong:UNLOCK_AT[unlocked];
+  fill.style.width=(all?100:Math.max(4,Math.min(100,((strong-prev)/Math.max(1,nxt-prev))*100)))+'%';
+  bar.appendChild(fill); prog.appendChild(bar);
+  var sub=document.createElement('div'); sub.className='gw-sub'; sub.textContent='A “strong day” = you did 6 or more of your 8 habits.'; prog.appendChild(sub);
+  // My powers (added to her daily list)
+  var mine=document.getElementById('gw-mine'); mine.textContent='';
+  if((S.growthAdded||[]).length){
+    var h1=document.createElement('div'); h1.className='gw-h'; h1.textContent='✦ My powers'; mine.appendChild(h1);
+    S.growthAdded.forEach(function(k){var g=growthByKey(k); if(g) mine.appendChild(gwCard(g,'',function(){removeGrowth(k);},'×'));});
+  }
+  // Ready to add (unlocked but not yet added)
+  var ready=document.getElementById('gw-ready'); ready.textContent='';
+  var readyList=[]; for(var i=0;i<unlocked;i++){ if((S.growthAdded||[]).indexOf(GROWTH_LIB[i].k)<0) readyList.push(GROWTH_LIB[i]); }
+  if(readyList.length){
+    var h2=document.createElement('div'); h2.className='gw-h'; h2.textContent='🔓 Ready to add'; ready.appendChild(h2);
+    readyList.forEach(function(g){ ready.appendChild(gwCard(g,'ready',function(){addGrowth(g.k);},'+ Add')); });
+  }
+  // Coming next (the next locked power — a teaser)
+  var nextEl=document.getElementById('gw-next'); nextEl.textContent='';
+  if(!all){
+    var h3=document.createElement('div'); h3.className='gw-h'; h3.textContent='🔒 Coming next'; nextEl.appendChild(h3);
+    nextEl.appendChild(gwCard(GROWTH_LIB[unlocked],'locked',null,UNLOCK_AT[unlocked]+' days'));
+  }
+}
+function showUnlock(g){
+  if(!g) return;
+  document.getElementById('ul-emoji').textContent=g.e;
+  document.getElementById('ul-name').textContent=g.t;
+  document.getElementById('ul-why').textContent=g.w;
+  document.getElementById('unlockpop').classList.add('show');
+  confettiBurst(innerWidth/2,innerHeight*0.35);
+  setTimeout(function(){confettiBurst(innerWidth*0.3,innerHeight*0.42);confettiBurst(innerWidth*0.7,innerHeight*0.42);},250);
+  clearTimeout(window._ul);window._ul=setTimeout(function(){document.getElementById('unlockpop').classList.remove('show');},6000);
+}
 
 /* ---- anime quotes: pops every 5th affirmation rep ---- */
 var ANIME_QUOTES = [
@@ -569,6 +724,7 @@ document.getElementById('afm-addbtn').onclick=function(){
 
 document.getElementById('levelup').onclick=function(){this.classList.remove('show');};
 document.getElementById('quotepop').onclick=function(){this.classList.remove('show');};
+document.getElementById('unlockpop').onclick=function(){this.classList.remove('show');};
 renderHabits(); renderAffirm(); renderSuperpower(); renderJournal(); buildPrintSheet(); renderGame();
 </script>
 </body>
