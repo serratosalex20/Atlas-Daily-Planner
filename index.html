@@ -399,6 +399,35 @@
   .bd-list{margin:0;padding-left:18px;display:grid;gap:5px;font-size:13.5px;color:var(--muted)}
   .bd-edit{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:9px 11px;color:var(--ink);font:inherit;font-size:13.5px;line-height:1.5;resize:vertical}
   .bd-edit:focus{outline:none;border-color:var(--gold)}
+  .tl-wrap{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px;display:grid;gap:9px}
+  .tl-cap{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);font-weight:700}
+  .tl-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .tl-stat{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:9px 8px;text-align:center}
+  .tl-stat .v{font-size:16px;font-weight:800;color:var(--ink);line-height:1.1;font-variant-numeric:tabular-nums}
+  .tl-stat .l{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin-top:3px;font-weight:700}
+  .tl-coach{font-size:12px;line-height:1.45;color:var(--muted);font-style:italic}
+  .tl-form{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .tl-out{display:flex;gap:5px}
+  .tl-out button{background:var(--bg2);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 10px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+  .tl-out button.on{border-color:var(--gold);color:var(--ink);background:rgba(233,184,114,.12)}
+  .tl-r{width:62px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:6px 8px;color:var(--ink);font:inherit;font-size:12.5px}
+  .tl-r:focus{outline:none;border-color:var(--gold)}
+  .tl-plan{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+  .tl-plan input{accent-color:var(--gold)}
+  .tl-log{background:var(--gold);color:#1a1407;border:0;border-radius:8px;padding:7px 13px;font:inherit;font-weight:800;font-size:12.5px;cursor:pointer}
+  .tl-list{display:grid;gap:5px}
+  .tl-item{display:flex;align-items:center;gap:8px;font-size:12px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:7px 10px}
+  .tl-item .d{color:var(--faint);font-variant-numeric:tabular-nums}
+  .tl-item .o{font-weight:800;padding:1px 7px;border-radius:6px;font-size:10.5px;letter-spacing:.04em}
+  .tl-item .o.w{color:#16210f;background:#7FB069}
+  .tl-item .o.l{color:#2a1410;background:#E0726A}
+  .tl-item .o.b{color:var(--ink);background:rgba(243,236,221,.14)}
+  .tl-item .o.n{color:var(--muted);background:transparent;border:1px solid var(--line)}
+  .tl-item .rr{color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+  .tl-item .pl{margin-left:auto;font-size:11px;font-weight:700}
+  .tl-item .pl.y{color:#7FB069}
+  .tl-item .pl.n{color:#E0726A}
+  .tl-item .x{background:none;border:0;color:var(--faint);font-size:15px;line-height:1;cursor:pointer;padding:0 2px}
 </style>
 </head>
 <body>
@@ -1470,6 +1499,7 @@ var expandedBlocks={};
 state.blockContent = state.blockContent || {};
 var bc = state.blockContent;
 bc.notes = bc.notes || {};
+bc.trades = bc.trades || [];   // [{date,outcome:'W'|'L'|'B'|'N',r:Number|null,followed:Bool}]
 if(bc.identity==null) bc.identity='';
 if(bc.strategy==null) bc.strategy='NOIC / “No-Wick” — entry checklist:\n• With the trend (bullish trend + bullish no-wick; bearish + bearish).\n• Limit AT the candle; wait for price to retrace and TAP it (≤10 candles).\n• No imbalance against you. Min 5-pip stop.\n• Stop off the wick +10% room. Fixed 1:1. A-setups only.\n• News: no new trades 1h before; flat 15m before.\n\n(Edit me — keep your live strategy here.)';
 bc.workout = bc.workout || {0:'Active recovery — walk + stretch',1:'Push — chest, shoulders, triceps',2:'Pull — back, biceps',3:'Legs — squat, hinge, calves, core',4:'Conditioning / cardio',5:'Full body or sport',6:'Rest / mobility'};
@@ -1495,13 +1525,82 @@ function bdHead(t,s){var d=document.createElement('div');d.className='bd-head';v
 function bdText(t){var d=document.createElement('div');d.className='bd-text';d.textContent=t;return d;}
 function bdHint(t){var d=document.createElement('div');d.className='bd-hint';d.textContent=t;return d;}
 function bdEdit(val,ph,onSave){var ta=document.createElement('textarea');ta.className='bd-edit';ta.value=val||'';ta.placeholder=ph;ta.rows=Math.max(2,Math.min(9,(val||'').split('\n').length+1));ta.addEventListener('input',function(){onSave(ta.value);});ta.addEventListener('click',function(e){e.stopPropagation();});return ta;}
+function tradeStats(trades){
+  var real=trades.filter(function(t){return t.outcome==='W'||t.outcome==='L'||t.outcome==='B';});
+  var recent=real.slice(-30);
+  var wins=recent.filter(function(t){return t.outcome==='W';}).length;
+  var losses=recent.filter(function(t){return t.outcome==='L';}).length;
+  var decisive=wins+losses;
+  var rVals=recent.filter(function(t){return typeof t.r==='number'&&!isNaN(t.r);});
+  var expectancy=rVals.length?(rVals.reduce(function(a,t){return a+t.r;},0)/rVals.length):null;
+  var followed=recent.filter(function(t){return t.followed;}).length;
+  return {n:recent.length, winRate:decisive?Math.round(wins/decisive*100):0,
+          expectancy:expectancy, adher:recent.length?Math.round(followed/recent.length*100):0};
+}
+function tradeCoach(s){
+  if(s.n<3) return 'Log a few sessions to see your edge take shape. Adherence first — results follow.';
+  if(s.adher>=80 && s.expectancy!=null && s.expectancy>0) return 'Disciplined and profitable — this is the zone. Keep doing exactly this.';
+  if(s.adher>=80 && s.expectancy!=null && s.expectancy<=0) return 'You\'re following your rules; the edge needs tuning, not more willpower. Review setups, not discipline.';
+  if(s.adher<60) return 'Your rules work when you follow them. Adherence is the lever this week — not a new strategy.';
+  return 'Steady. Watch whether your best results line up with the days you actually followed the plan.';
+}
+function buildTradeLog(){
+  bc.trades=bc.trades||[];
+  var wrap=document.createElement('div'); wrap.className='tl-wrap';
+  wrap.addEventListener('click',function(e){e.stopPropagation();});
+  function rebuild(){ var fresh=buildTradeLog(); if(wrap.parentNode) wrap.parentNode.replaceChild(fresh,wrap); }
+  var cap=document.createElement('div'); cap.className='tl-cap'; cap.textContent='Trade log · last 30 trades'; wrap.appendChild(cap);
+  var s=tradeStats(bc.trades);
+  var stats=document.createElement('div'); stats.className='tl-stats';
+  function stat(v,l){var c=document.createElement('div');c.className='tl-stat';var vv=document.createElement('div');vv.className='v';vv.textContent=v;var ll=document.createElement('div');ll.className='l';ll.textContent=l;c.appendChild(vv);c.appendChild(ll);return c;}
+  stats.appendChild(stat(s.n?s.winRate+'%':'—','Win rate'));
+  stats.appendChild(stat(s.expectancy!=null?((s.expectancy>=0?'+':'')+s.expectancy.toFixed(2)+'R'):'—','Expectancy'));
+  stats.appendChild(stat(s.n?s.adher+'%':'—','Followed plan'));
+  wrap.appendChild(stats);
+  var coach=document.createElement('div'); coach.className='tl-coach'; coach.textContent=tradeCoach(s); wrap.appendChild(coach);
+  var draft={outcome:'W',r:'',followed:true};
+  var form=document.createElement('div'); form.className='tl-form';
+  var out=document.createElement('div'); out.className='tl-out';
+  [['W','Win'],['L','Loss'],['B','BE'],['N','No-trade']].forEach(function(o){
+    var btn=document.createElement('button'); btn.textContent=o[1]; if(o[0]===draft.outcome)btn.classList.add('on');
+    btn.onclick=function(){draft.outcome=o[0];Array.prototype.forEach.call(out.querySelectorAll('button'),function(x){x.classList.remove('on');});btn.classList.add('on');};
+    out.appendChild(btn);
+  });
+  form.appendChild(out);
+  var rin=document.createElement('input'); rin.className='tl-r'; rin.type='number'; rin.step='0.1'; rin.placeholder='R'; rin.oninput=function(){draft.r=rin.value;};
+  form.appendChild(rin);
+  var plan=document.createElement('label'); plan.className='tl-plan';
+  var cb=document.createElement('input'); cb.type='checkbox'; cb.checked=true; cb.onchange=function(){draft.followed=cb.checked;};
+  plan.appendChild(cb); plan.appendChild(document.createTextNode('Plan')); form.appendChild(plan);
+  var log=document.createElement('button'); log.className='tl-log'; log.textContent='Log';
+  log.onclick=function(){ var r=parseFloat(draft.r); bc.trades.push({date:dkey(),outcome:draft.outcome,r:isNaN(r)?null:r,followed:!!draft.followed}); save(); rebuild(); };
+  form.appendChild(log);
+  wrap.appendChild(form);
+  var recent=bc.trades.slice(-6).reverse();
+  if(recent.length){
+    var list=document.createElement('div'); list.className='tl-list';
+    recent.forEach(function(t){
+      var idx=bc.trades.lastIndexOf(t);
+      var it=document.createElement('div'); it.className='tl-item';
+      var d=document.createElement('span'); d.className='d'; d.textContent=(t.date||'').slice(5); it.appendChild(d);
+      var o=document.createElement('span'); o.className='o '+({W:'w',L:'l',B:'b',N:'n'}[t.outcome]||'n'); o.textContent=({W:'WIN',L:'LOSS',B:'BE',N:'NO'}[t.outcome]||'?'); it.appendChild(o);
+      if(typeof t.r==='number'){var rr=document.createElement('span'); rr.className='rr'; rr.textContent=(t.r>=0?'+':'')+t.r+'R'; it.appendChild(rr);}
+      var pl=document.createElement('span'); pl.className='pl '+(t.followed?'y':'n'); pl.textContent=t.followed?'✓ plan':'✗ plan'; it.appendChild(pl);
+      var x=document.createElement('button'); x.className='x'; x.textContent='×'; x.title='Remove';
+      x.onclick=function(){ if(idx>=0){bc.trades.splice(idx,1);save();rebuild();} };
+      it.appendChild(x); list.appendChild(it);
+    });
+    wrap.appendChild(list);
+  }
+  return wrap;
+}
 function buildDetail(i,b){
   var kind=blockDetailKind(b),w=document.createElement('div');w.className='block-detail';
   w.addEventListener('click',function(e){e.stopPropagation();});
   if(kind==='identity'){w.appendChild(bdHead('Your identity statement','read aloud'));w.appendChild(bdEdit(bc.identity,'Paste your “I am” statement here to read it…',function(v){bc.identity=v;save();}));}
   else if(kind==='meditation'){var m=activeMeditation();w.appendChild(bdHead('This month: '+m.n,'meditation'));w.appendChild(bdText(m.h));}
   else if(kind==='workout'){var day=new Date().getDay();w.appendChild(bdHead("Today's workout",['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]));w.appendChild(bdEdit(bc.workout[day]||'','What are you training today?',function(v){bc.workout[day]=v;save();}));w.appendChild(bdHint('Editing updates this weekday in your split.'));}
-  else if(kind==='strategy'){w.appendChild(bdHead('Current strategy + checklist','markets'));w.appendChild(bdEdit(bc.strategy,'Your live strategy / NOIC checklist…',function(v){bc.strategy=v;save();}));}
+  else if(kind==='strategy'){w.appendChild(bdHead('Current strategy + checklist','markets'));w.appendChild(bdEdit(bc.strategy,'Your live strategy / NOIC checklist…',function(v){bc.strategy=v;save();}));w.appendChild(buildTradeLog());}
   else if(kind==='activities'){w.appendChild(bdHead('Activity ideas','this week'));var ul=document.createElement('ul');ul.className='bd-list';weekActivities(4).forEach(function(a){var li=document.createElement('li');li.textContent=a;ul.appendChild(li);});w.appendChild(ul);}
   else if(kind==='admin'){w.appendChild(bdHead("Today's sends",'admin'));w.appendChild(bdText('Coming soon: your follow-ups from the morning brief surface here. For now, jot them below.'));}
   var key='blk_'+(b.t||i);
