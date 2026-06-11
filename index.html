@@ -369,6 +369,13 @@
   .ru-name{font-weight:800;font-size:38px;letter-spacing:.02em;color:var(--gold);text-shadow:0 0 26px rgba(233,184,114,.45);margin:0 0 6px}
   .ru-lvl{color:var(--muted);font-size:14px;letter-spacing:.06em}
   .ru-tap{color:var(--faint);font-size:12px;margin-top:24px}
+  /* Rank badges — CSS shield medallion (font-independent), evolves per level */
+  .rankbadge{position:relative;width:34px;height:38px;display:grid;place-items:center;clip-path:polygon(50% 0,100% 26%,100% 74%,50% 100%,0 74%,0 26%);background:linear-gradient(155deg,var(--ba,#7A828F),var(--bb,#3B4048));box-shadow:0 0 var(--bg,6px) rgba(233,184,114,.45),inset 0 1px 0 rgba(255,255,255,.4),inset 0 -3px 5px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.16)}
+  .rb-num{font-weight:900;font-size:15px;color:var(--bi,#EDEFF2);text-shadow:0 1px 1px rgba(0,0,0,.3)}
+  .rb-star{position:absolute;top:-6px;font-size:9px;color:#FFF0B8;text-shadow:0 0 5px rgba(233,184,114,.9);letter-spacing:-1px;white-space:nowrap}
+  .rankbadge.big{width:90px;height:100px}
+  .rankbadge.big .rb-num{font-size:42px}
+  .rankbadge.big .rb-star{top:-13px;font-size:21px}
 </style>
 </head>
 <body>
@@ -1674,6 +1681,29 @@ document.getElementById('resetbtn').onclick=function(){cur.checks={};cur.mvd={};
    streak milestones, and perfect days. Streak is tied to holding the Floor. */
 var ATLAS_LEVELS=[{n:'Recruit',e:'🪖'},{n:'Disciplined',e:'🧭'},{n:'Forged',e:'🔥'},{n:'Relentless',e:'⚡'},{n:'Vanguard',e:'🛡️'},{n:'Ironclad',e:'⚙️'},{n:'Warlord',e:'⚔️'},{n:'Unbreakable',e:'🗿'},{n:'Sovereign',e:'👑'},{n:'Legend',e:'🏆'}];
 var PILLAR_XP={body:5,mind:15,spirit:8,family:15,money:8,rest:5};   // leverage-weighted: deep-work(mind) + family worth most
+// Rank badge tiers — color ramp that evolves each level (iron → bronze → … → radiant gold).
+var RANK_TIERS=[
+  {a:'#7A828F',b:'#3B4048',ink:'#EDEFF2'},  // 1 iron
+  {a:'#C98A4B',b:'#7A4F24',ink:'#2a1c0c'},  // 2 bronze
+  {a:'#D5733E',b:'#8A3D1F',ink:'#2a1208'},  // 3 ember
+  {a:'#6E93B5',b:'#33506B',ink:'#0c1a26'},  // 4 steel
+  {a:'#C7CFDA',b:'#828B98',ink:'#23272e'},  // 5 silver
+  {a:'#B9A36A',b:'#6E5C33',ink:'#221b0a'},  // 6 brass
+  {a:'#D15A5A',b:'#7E2626',ink:'#2a0d0d'},  // 7 crimson
+  {a:'#9B7BD0',b:'#4F3A86',ink:'#160c2a'},  // 8 amethyst
+  {a:'#F0CC86',b:'#B8862F',ink:'#2a210f'},  // 9 gold
+  {a:'#FFF0B8',b:'#E9B872',ink:'#2a210f'}   // 10 radiant
+];
+function rankBadge(L){
+  var t=RANK_TIERS[Math.min(L-1,RANK_TIERS.length-1)];
+  var d=document.createElement('div'); d.className='rankbadge';
+  d.style.setProperty('--ba',t.a); d.style.setProperty('--bb',t.b); d.style.setProperty('--bi',t.ink);
+  d.style.setProperty('--bg',(4+Math.min(L,10)*1.7).toFixed(0)+'px');
+  var num=document.createElement('span'); num.className='rb-num'; num.textContent=L; d.appendChild(num);
+  if(L>=6){ var s=document.createElement('span'); s.className='rb-star'; s.textContent=(L>=9?'★★':'★'); d.appendChild(s); }
+  return d;
+}
+function setBadge(el,L,big){ if(!el) return; el.textContent=''; var b=rankBadge(L); if(big) b.classList.add('big'); el.appendChild(b); }
 state.gameLevel = state.gameLevel || 1;
 state.gameStreakSeen = state.gameStreakSeen || 0;
 var _atlasXPprev=null;
@@ -1695,12 +1725,12 @@ function atlasLevelMeta(L){return ATLAS_LEVELS[Math.min(L-1,ATLAS_LEVELS.length-
 function floorOn(k){var r=(k===dkey())?buildRecord(cur):state.history[k];return !!(r&&(r.mvd||0)>=3);}
 function atlasStreak(){var d=new Date();if(!floorOn(dkey(d)))d.setDate(d.getDate()-1);var s=0,miss=0;for(var i=0;i<400;i++){var k=dkey(d);if(floorOn(k)){s++;miss=0;}else{miss++;if(miss>=2)break;}d.setDate(d.getDate()-1);}return s;}
 function floatXP(amt,x,y){if(!amt)return;var el=document.createElement('div');el.className='xpfloat';el.textContent='+'+amt+' XP';el.style.left=x+'px';el.style.top=y+'px';document.body.appendChild(el);setTimeout(function(){el.remove();},1100);}
-function showRankUp(L){var m=atlasLevelMeta(L);document.getElementById('ru-emoji').textContent=m.e;document.getElementById('ru-name').textContent=m.n;document.getElementById('ru-lvl').textContent='Level '+L;document.getElementById('rankup').classList.add('show');triggerConfetti();clearTimeout(window._ru);window._ru=setTimeout(function(){document.getElementById('rankup').classList.remove('show');},4200);}
+function showRankUp(L){var m=atlasLevelMeta(L);setBadge(document.getElementById('ru-emoji'),L,true);document.getElementById('ru-name').textContent=m.n;document.getElementById('ru-lvl').textContent='Level '+L;document.getElementById('rankup').classList.add('show');triggerConfetti();clearTimeout(window._ru);window._ru=setTimeout(function(){document.getElementById('rankup').classList.remove('show');},4200);}
 function renderGame(opts){
   var nameEl=document.getElementById('gb-name'); if(!nameEl) return;
   var xp=atlasXP(), L=atlasLevelFromXP(xp), m=atlasLevelMeta(L);
   var c0=atlasLvlThreshold(L), nx=atlasLvlThreshold(L+1), into=xp-c0, span=Math.max(1,nx-c0);
-  document.getElementById('gb-emoji').textContent=m.e;
+  setBadge(document.getElementById('gb-emoji'),L,false);
   nameEl.textContent=m.n;
   document.getElementById('gb-lvl').textContent='Level '+L;
   document.getElementById('gb-xpfill').style.width=Math.max(3,Math.min(100,(into/span)*100))+'%';

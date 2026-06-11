@@ -525,7 +525,19 @@ var ANIME_QUOTES = [
   {s:'🍥',q:'If you don\'t like your destiny, have the courage to change it!',c:'Naruto Uzumaki · Naruto'},
   {s:'🍥',q:'I never go back on my word — that\'s my ninja way!',c:'Naruto Uzumaki · Naruto'},
   {s:'🍥',q:'A dropout can beat a genius through hard work.',c:'Rock Lee · Naruto'},
-  {s:'🍥',q:'When you protect something precious, you become as strong as you need to be.',c:'Naruto Uzumaki · Naruto'}
+  {s:'🍥',q:'When you protect something precious, you become as strong as you need to be.',c:'Naruto Uzumaki · Naruto'},
+  {s:'💥',q:'Sometimes I feel like a failure — but I will never give up.',c:'Izuku Midoriya · My Hero Academia'},
+  {s:'💥',q:'You always come out ahead when you learn from the experience.',c:'My Hero Academia'},
+  {s:'💥',q:'You can be the hero of your own story.',c:'My Hero Academia'},
+  {s:'💥',q:'Your quirk is yours — your strength is uniquely you.',c:'My Hero Academia'},
+  {s:'🔥',q:'It\'s the heart that drives us — and our hearts have no limits!',c:'Tanjiro Kamado · Demon Slayer'},
+  {s:'🔥',q:'Don\'t ever give up. Even when it\'s hard, keep moving.',c:'Tanjiro Kamado · Demon Slayer'},
+  {s:'🔥',q:'Those who don\'t give up are the ones who grow strong.',c:'Demon Slayer'},
+  {s:'🔥',q:'Even if you\'re weak today, you can grow stronger tomorrow.',c:'Demon Slayer'},
+  {s:'🍥',q:'Hard work is worthless for those who don\'t believe in themselves.',c:'Naruto Uzumaki · Naruto'},
+  {s:'🍥',q:'When you think of giving up, remember why you held on so long.',c:'Naruto'},
+  {s:'🍥',q:'It\'s confidence that lets you use everything you\'ve learned.',c:'Kakashi Hatake · Naruto'},
+  {s:'🍥',q:'Stand by your people — friends are worth protecting.',c:'Kakashi Hatake · Naruto'}
 ];
 function showAnimeQuote(){
   var x=ANIME_QUOTES[Math.floor(Math.random()*ANIME_QUOTES.length)];
@@ -533,7 +545,7 @@ function showAnimeQuote(){
   document.getElementById('q-text').textContent='“'+x.q+'”';
   document.getElementById('q-char').textContent='— '+x.c;
   var o=document.getElementById('quotepop'); o.classList.add('show');
-  clearTimeout(window._qp); window._qp=setTimeout(function(){o.classList.remove('show');},5200);
+  clearTimeout(window._qp); window._qp=setTimeout(function(){o.classList.remove('show');},7200);
 }
 
 /* ---- wires ---- */
