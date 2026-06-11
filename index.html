@@ -376,6 +376,19 @@
   .rankbadge.big{width:90px;height:100px}
   .rankbadge.big .rb-num{font-size:42px}
   .rankbadge.big .rb-star{top:-13px;font-size:21px}
+  /* Expandable block detail — tap the block body to reveal the "how" */
+  .block{flex-wrap:wrap}
+  .bchev{flex:none;color:var(--faint);font-size:20px;line-height:1;align-self:center;transition:transform .2s;padding:0 2px}
+  .block.expanded .bchev{transform:rotate(90deg);color:var(--gold)}
+  .block-detail{flex-basis:100%;width:100%;margin-top:11px;padding-top:12px;border-top:1px solid var(--line);display:grid;gap:7px;cursor:default}
+  .bd-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:4px}
+  .bd-head b{font-size:13px;color:var(--ink);font-weight:700}
+  .bd-head span{font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
+  .bd-text{font-size:13.5px;color:var(--muted);line-height:1.55;white-space:pre-wrap}
+  .bd-hint{font-size:11px;color:var(--faint);font-style:italic}
+  .bd-list{margin:0;padding-left:18px;display:grid;gap:5px;font-size:13.5px;color:var(--muted)}
+  .bd-edit{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:9px 11px;color:var(--ink);font:inherit;font-size:13.5px;line-height:1.5;resize:vertical}
+  .bd-edit:focus{outline:none;border-color:var(--gold)}
 </style>
 </head>
 <body>
@@ -1406,17 +1419,69 @@ function genInsight(rec){
 
 /* ============ RENDER: day ============ */
 var MODE, RANGE=30;
+/* ============ EXPANDABLE BLOCK DETAIL (just-in-time coach per block) ============
+   Tap a block's body to expand it; the detail is editable personal content
+   (identity / workout / strategy), an auto-rotating library (meditation of the
+   month, family activities), or a universal note. Stored in state.blockContent. */
+var expandedBlocks={};
+state.blockContent = state.blockContent || {};
+var bc = state.blockContent;
+bc.notes = bc.notes || {};
+if(bc.identity==null) bc.identity='';
+if(bc.strategy==null) bc.strategy='NOIC / “No-Wick” — entry checklist:\n• With the trend (bullish trend + bullish no-wick; bearish + bearish).\n• Limit AT the candle; wait for price to retrace and TAP it (≤10 candles).\n• No imbalance against you. Min 5-pip stop.\n• Stop off the wick +10% room. Fixed 1:1. A-setups only.\n• News: no new trades 1h before; flat 15m before.\n\n(Edit me — keep your live strategy here.)';
+bc.workout = bc.workout || {0:'Active recovery — walk + stretch',1:'Push — chest, shoulders, triceps',2:'Pull — back, biceps',3:'Legs — squat, hinge, calves, core',4:'Conditioning / cardio',5:'Full body or sport',6:'Rest / mobility'};
+var MEDITATION_LIB=[
+  {n:'Breath Awareness',h:'Sit tall. Follow the natural breath in and out. When the mind wanders, gently return to the breath. ~10 min.'},
+  {n:'Box Breathing',h:'Inhale 4 · hold 4 · exhale 4 · hold 4. Repeat. Calms the nervous system and sharpens focus.'},
+  {n:'Body Scan',h:'Move attention slowly head → toe, noticing sensation without judging. Releases stored tension.'},
+  {n:'4-7-8 Breath',h:'Inhale 4 · hold 7 · exhale 8. Slows you down fast — great before deep work or sleep.'},
+  {n:'Loving-Kindness',h:'Silently wish “may I be well… may you be well…” toward yourself, loved ones, then all. Builds calm + connection.'},
+  {n:'Counting the Breath',h:'Count each exhale 1–10, then restart. Lost count? Begin again. Trains sustained attention.'},
+  {n:'Open Awareness',h:'Drop the anchor. Rest as open, choiceless awareness — let sounds, sensations, thoughts come and go.'},
+  {n:'Coherent Breathing',h:'~5–6 breaths/min (inhale 5, exhale 5). Syncs heart + breath; deeply steadying.'},
+  {n:'Mantra / Drums',h:'Anchor on a repeated word, sound, or drum rhythm. When the mind drifts, return to the sound.'},
+  {n:'Gratitude Meditation',h:'Bring to mind 3 things you’re grateful for. Feel each fully in the body before the next.'},
+  {n:'Visualization',h:'Vividly rehearse your ideal day / a goal achieved. Engage all senses. Primes the brain to act.'},
+  {n:'Walking Meditation',h:'Walk slowly, feeling each step — heel, ball, toe. Stillness inside motion.'}
+];
+function activeMeditation(){var d=new Date();return MEDITATION_LIB[(d.getFullYear()*12+d.getMonth())%MEDITATION_LIB.length];}
+var FAMILY_ACTIVITIES=['Bike ride or walk somewhere new','Cook a new recipe together','Board game or card tournament','Build something (Lego, model, fort)','Movie night — she picks','Park, pool, or hike','Library trip — pick books together','Art / drawing session','Teach her something you know','Learn something from her','Drive + deep talk, no phones','Plan a mini day-trip together','Shoot hoops / play catch','Stargazing or a night walk','Do a kind act together','Music — play, sing, or discover'];
+function weekActivities(n){var d=new Date();var wk=Math.floor((d-new Date(d.getFullYear(),0,1))/604800000);var out=[];for(var i=0;i<n;i++)out.push(FAMILY_ACTIVITIES[(wk*3+i)%FAMILY_ACTIVITIES.length]);return out;}
+function blockDetailKind(b){var t=(b.t||'').toLowerCase();if(t.indexOf('wake')>=0&&t.indexOf('prime')>=0)return 'identity';if(t.indexOf('stillness')>=0)return 'meditation';if(t.indexOf('train')>=0||t.indexOf('move')>=0)return 'workout';if(t.indexOf('market')>=0)return 'strategy';if(t.indexOf('admin')>=0)return 'admin';if(b.p==='family'||t.indexOf('family')>=0||t.indexOf('play')>=0||t.indexOf('kenzie')>=0||t.indexOf('adventure')>=0||t.indexOf('connection')>=0)return 'activities';return '';}
+function bdHead(t,s){var d=document.createElement('div');d.className='bd-head';var b=document.createElement('b');b.textContent=t;d.appendChild(b);if(s){var sp=document.createElement('span');sp.textContent=s;d.appendChild(sp);}return d;}
+function bdText(t){var d=document.createElement('div');d.className='bd-text';d.textContent=t;return d;}
+function bdHint(t){var d=document.createElement('div');d.className='bd-hint';d.textContent=t;return d;}
+function bdEdit(val,ph,onSave){var ta=document.createElement('textarea');ta.className='bd-edit';ta.value=val||'';ta.placeholder=ph;ta.rows=Math.max(2,Math.min(9,(val||'').split('\n').length+1));ta.addEventListener('input',function(){onSave(ta.value);});ta.addEventListener('click',function(e){e.stopPropagation();});return ta;}
+function buildDetail(i,b){
+  var kind=blockDetailKind(b),w=document.createElement('div');w.className='block-detail';
+  w.addEventListener('click',function(e){e.stopPropagation();});
+  if(kind==='identity'){w.appendChild(bdHead('Your identity statement','read aloud'));w.appendChild(bdEdit(bc.identity,'Paste your “I am” statement here to read it…',function(v){bc.identity=v;save();}));}
+  else if(kind==='meditation'){var m=activeMeditation();w.appendChild(bdHead('This month: '+m.n,'meditation'));w.appendChild(bdText(m.h));}
+  else if(kind==='workout'){var day=new Date().getDay();w.appendChild(bdHead("Today's workout",['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]));w.appendChild(bdEdit(bc.workout[day]||'','What are you training today?',function(v){bc.workout[day]=v;save();}));w.appendChild(bdHint('Editing updates this weekday in your split.'));}
+  else if(kind==='strategy'){w.appendChild(bdHead('Current strategy + checklist','markets'));w.appendChild(bdEdit(bc.strategy,'Your live strategy / NOIC checklist…',function(v){bc.strategy=v;save();}));}
+  else if(kind==='activities'){w.appendChild(bdHead('Activity ideas','this week'));var ul=document.createElement('ul');ul.className='bd-list';weekActivities(4).forEach(function(a){var li=document.createElement('li');li.textContent=a;ul.appendChild(li);});w.appendChild(ul);}
+  else if(kind==='admin'){w.appendChild(bdHead("Today's sends",'admin'));w.appendChild(bdText('Coming soon: your follow-ups from the morning brief surface here. For now, jot them below.'));}
+  var key='blk_'+(b.t||i);
+  w.appendChild(bdHead('Notes',''));
+  w.appendChild(bdEdit(bc.notes[key]||'','Add a note for this block…',function(v){bc.notes[key]=v;save();}));
+  return w;
+}
+
 function renderTimeline(){
   var tl=document.getElementById('timeline'),list=listFor(MODE);tl.innerHTML='';
   list.forEach(function(b,i){
     var el=document.createElement('div');
-    el.className='block'+(cur.checks[i]?' checked':'');
+    el.className='block'+(cur.checks[i]?' checked':'')+(expandedBlocks[i]?' expanded':'');
     el.style.setProperty('--pc','var('+P[b.p]+')');
     el.innerHTML='<div class="time"><span class="s">'+fmt12(b.s)+'</span><span class="e">'+fmt12(b.e)+'</span></div>'+
       '<div class="body"><div class="ttl">'+(b.star?'<span class="star">⭐</span>':'')+b.t+
       ' <span class="pill" style="background:var('+P[b.p]+')">'+PN[b.p]+'</span></div><div class="anchor">'+b.a+'</div></div>'+
+      '<div class="bchev">›</div>'+
       '<div class="bchk"><svg viewBox="0 0 24 24" fill="none" stroke="#15120c" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>';
-    el.onclick=function(){var on=!cur.checks[i];var r=this.getBoundingClientRect();cur.checks[i]=!cur.checks[i];save();renderTimeline();updateProgress();renderLog();renderGame(on?{gain:true,x:r.left+r.width/2,y:r.top+r.height/2}:{});};
+    el.onclick=function(){ expandedBlocks[i]=!expandedBlocks[i]; renderTimeline(); };
+    var chk=el.querySelector('.bchk');
+    chk.onclick=function(e){ e.stopPropagation(); var on=!cur.checks[i]; var r=el.getBoundingClientRect(); cur.checks[i]=!cur.checks[i]; save(); renderTimeline(); updateProgress(); renderLog(); renderGame(on?{gain:true,x:r.left+r.width/2,y:r.top+r.height/2}:{}); };
+    if(expandedBlocks[i]) el.appendChild(buildDetail(i,b));
     tl.appendChild(el);
   });
   markNow();
