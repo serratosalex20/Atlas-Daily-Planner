@@ -1603,9 +1603,33 @@ var MEDITATION_LIB=[
   {n:'Walking Meditation',h:'Walk slowly, feeling each step — heel, ball, toe. Stillness inside motion.'}
 ];
 function activeMeditation(){var d=new Date();return MEDITATION_LIB[(d.getFullYear()*12+d.getMonth())%MEDITATION_LIB.length];}
-var FAMILY_ACTIVITIES=['Bike ride or walk somewhere new','Cook a new recipe together','Board game or card tournament','Build something (Lego, model, fort)','Movie night — she picks','Park, pool, or hike','Library trip — pick books together','Art / drawing session','Teach her something you know','Learn something from her','Drive + deep talk, no phones','Plan a mini day-trip together','Shoot hoops / play catch','Stargazing or a night walk','Do a kind act together','Music — play, sing, or discover'];
-function weekActivities(n){var d=new Date();var wk=Math.floor((d-new Date(d.getFullYear(),0,1))/604800000);var out=[];for(var i=0;i<n;i++)out.push(FAMILY_ACTIVITIES[(wk*3+i)%FAMILY_ACTIVITIES.length]);return out;}
-function blockDetailKind(b){var t=(b.t||'').toLowerCase();if(t.indexOf('wake')>=0&&t.indexOf('prime')>=0)return 'identity';if(t.indexOf('stillness')>=0)return 'meditation';if(t.indexOf('train')>=0||t.indexOf('move')>=0)return 'workout';if(t.indexOf('market')>=0)return 'strategy';if(t.indexOf('admin')>=0)return 'admin';if(b.p==='family'||t.indexOf('family')>=0||t.indexOf('play')>=0||t.indexOf('kenzie')>=0||t.indexOf('adventure')>=0||t.indexOf('connection')>=0)return 'activities';return '';}
+/* Family-block content is keyed to the MOMENT, not the pillar — a wind-down,
+   an adventure, and a dinner are different occasions and get different ideas. */
+var FAMILY_CONTENT={
+ kmorning:{h:'Start her day right',s:'be present',pool:['Breakfast together — phones down','Ask what she\'s looking forward to today','One real compliment, said out loud','A proper hug before the day starts','Help her get ready calm — no rushing energy','Name one thing that\'ll make today good']},
+ kenzietime:{h:'After school — her world',s:'listen first',pool:['Ask about her day before anything else','Listen for what\'s under the words','Homework: guide, don\'t take over','Praise the effort, not just the result','Let her vent without fixing it','Phone in another room']},
+ adventure:{h:'Get out & make a memory',s:'adventure',pool:['Park or playground — let her lead','Pool or swim','Library, then a treat','Museum or science center','Bike ride somewhere new','Short hike or nature walk','Build or fix something together','Farmers market or a food adventure','Shoot hoops or play catch','Mini day-trip to a new spot']},
+ play:{h:'Play together',s:'all the way in',pool:['Board game or card tournament','Movie night — her pick','Art or craft project','Bake or cook something together','Kitchen dance party','Co-op video game — she teaches you','Puzzle or a big build','Blanket fort']},
+ meal:{h:'At the table',s:'connect',pool:['Rose & thorn — best and hardest part of the day','No phones at the table — all of you','Ask about a friend by name','Tell a real story from your day','Plan one fun thing for the weekend','Let her pick the music']},
+ winddown:{h:'Wind down together',s:'before bed',pool:['Read a chapter together','Rose & thorn of her day','Three things you\'re each grateful for','5 minutes of slow stretching or breathing','Lay tomorrow out together — no rush','Phone-free tuck-in chat','One specific thing you\'re proud of her for']}
+};
+function rotIdeas(pool,n){var d=new Date();var wk=Math.floor((d-new Date(d.getFullYear(),0,1))/604800000);var out=[],k=Math.min(n,pool.length);for(var i=0;i<k;i++)out.push(pool[(wk+i)%pool.length]);return out;}
+function blockDetailKind(b){var t=(b.t||'').toLowerCase();
+ if(t.indexOf('wake')>=0&&t.indexOf('prime')>=0)return 'identity';
+ if(t.indexOf('stillness')>=0)return 'meditation';
+ if(t.indexOf('market')>=0)return 'strategy';
+ if(t.indexOf('admin')>=0)return 'admin';
+ if(t.indexOf('train')>=0||t.indexOf('move')>=0)return 'workout';
+ if(t.indexOf('power down')>=0||(t.indexOf('wind')>=0&&t.indexOf('sleep')>=0))return 'sleep';   // his night identity read
+ if(t.indexOf('adventure')>=0)return 'adventure';
+ if(t.indexOf('wind')>=0)return 'winddown';                                                      // Kenzie Wind-Down
+ if((t.indexOf('morning')>=0||t.indexOf('breakfast')>=0)&&(b.p==='family'||t.indexOf('kenzie')>=0))return 'kmorning';
+ if(t.indexOf('kenzie')>=0&&t.indexOf('time')>=0)return 'kenzietime';
+ if(t.indexOf('dinner')>=0||t.indexOf('meal')>=0)return 'meal';
+ if(t.indexOf('play')>=0||t.indexOf('free time')>=0||t.indexOf('connection')>=0)return 'play';
+ if(b.p==='family'||t.indexOf('family')>=0||t.indexOf('kenzie')>=0)return 'play';                // any other family block
+ return '';
+}
 function bdHead(t,s){var d=document.createElement('div');d.className='bd-head';var b=document.createElement('b');b.textContent=t;d.appendChild(b);if(s){var sp=document.createElement('span');sp.textContent=s;d.appendChild(sp);}return d;}
 function bdText(t){var d=document.createElement('div');d.className='bd-text';d.textContent=t;return d;}
 function bdHint(t){var d=document.createElement('div');d.className='bd-hint';d.textContent=t;return d;}
@@ -1762,7 +1786,8 @@ function buildDetail(i,b){
     w.appendChild(bdEdit(bc.workout[day]||'','What do you train this weekday?',function(v){bc.workout[day]=v;save();}));
     w.appendChild(bdHint('Today’s session is just for today. The split is your recurring template.'));}
   else if(kind==='strategy'){w.appendChild(bdHead('Current strategy + checklist','markets'));w.appendChild(bdEdit(bc.strategy,'Your live strategy / NOIC checklist…',function(v){bc.strategy=v;save();}));w.appendChild(buildTradeLog());}
-  else if(kind==='activities'){w.appendChild(bdHead('Activity ideas','this week'));var ul=document.createElement('ul');ul.className='bd-list';weekActivities(4).forEach(function(a){var li=document.createElement('li');li.textContent=a;ul.appendChild(li);});w.appendChild(ul);}
+  else if(FAMILY_CONTENT[kind]){var cfg=FAMILY_CONTENT[kind];w.appendChild(bdHead(cfg.h,cfg.s));var ul=document.createElement('ul');ul.className='bd-list';rotIdeas(cfg.pool,4).forEach(function(a){var li=document.createElement('li');li.textContent=a;ul.appendChild(li);});w.appendChild(ul);}
+  else if(kind==='sleep'){w.appendChild(bdHead('Read it one last time','night'));w.appendChild(bdText(bc.identity||'Set your “I am” statement in Wake & Prime — then read it here at night too.'));w.appendChild(bdHint('Same statement, morning and night. Then screens off.'));}
   else if(kind==='admin'){w.appendChild(bdHead("Today's sends",'admin'));w.appendChild(bdText('Coming soon: your follow-ups from the morning brief surface here. For now, jot them below.'));}
   var key='blk_'+(b.t||i);
   w.appendChild(bdHead('Notes',''));
