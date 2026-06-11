@@ -127,6 +127,16 @@
   .sunday-review .sr-carry .ci button.cf:hover{background:rgba(167,139,250,.08)}
   .sunday-review .sr-carry .ci button:disabled{opacity:.5;cursor:default}
   .sunday-review.is-sunday .sr-week b{color:var(--spirit)}
+  .sunday-review .sr-recall{font-size:13px;line-height:1.55;color:var(--muted);background:rgba(167,139,250,.05);border:1px dashed rgba(167,139,250,.25);border-radius:11px;padding:10px 13px;margin-bottom:14px}
+  .sunday-review .sr-recall b{color:var(--spirit);font-weight:600}
+  .sunday-review .srb-cap{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:9px}
+  .sunday-review .sr-balance{margin-bottom:16px;display:grid;gap:7px}
+  .sunday-review .srb-row{display:flex;align-items:center;gap:9px}
+  .sunday-review .srb-name{flex:none;width:52px;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+  .sunday-review .srb-track{flex:1;height:9px;background:var(--bg2);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .sunday-review .srb-fill{height:100%;border-radius:999px;transition:width .5s cubic-bezier(.2,.9,.3,1);min-width:2px}
+  .sunday-review .srb-val{flex:none;width:18px;text-align:right;font-size:11px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+  .sunday-review .srb-row.is-light .srb-name,.sunday-review .srb-row.is-light .srb-val{color:var(--ink)}
 
   /* Atlas Journal — end-of-day reflection, Money-green accent */
   .atlas-journal{background:linear-gradient(180deg,rgba(143,197,107,.06),var(--card));border-color:rgba(143,197,107,.20)}
@@ -534,7 +544,10 @@
   <div class="panel sunday-review" id="sunday-review">
     <h2><span class="sr-eye">🌙</span> Sunday Review</h2>
     <div class="sr-week" id="sr-week">Week of —</div>
+    <div class="sr-recall" id="sr-recall" style="display:none"></div>
     <div class="sr-stats" id="sr-stats"></div>
+    <div class="srb-cap">Pillar balance · blocks this week</div>
+    <div class="sr-balance" id="sr-balance"></div>
     <div class="sr-narrative" id="sr-narrative">—</div>
     <div class="sr-label">One thing to protect next week</div>
     <textarea class="sr-reflection" id="sr-reflection" placeholder="What's the one thing you want to defend? Half a sentence is enough." maxlength="400"></textarea>
@@ -1008,6 +1021,32 @@ function srRenderStatGrid(week, st){
   box.appendChild(statCell('Hardest', st.hardestDay?dayLabel(st.hardestDay, st.hardestDay.record.pct):'—', daySub(st.hardestDay)));
 }
 
+function srRenderPillarBalance(st){
+  var box=document.getElementById('sr-balance'); if(!box) return; box.textContent='';
+  var max=0; PORDER.forEach(function(p){ if(st.pillarTotals[p]>max) max=st.pillarTotals[p]; });
+  PORDER.forEach(function(p){
+    var row=document.createElement('div'); row.className='srb-row'+((p===st.light&&st.daysLogged>0)?' is-light':'');
+    var nm=document.createElement('div'); nm.className='srb-name'; nm.textContent=PN[p];
+    var tr=document.createElement('div'); tr.className='srb-track';
+    var fl=document.createElement('div'); fl.className='srb-fill';
+    fl.style.width=(max>0?Math.max(3,(st.pillarTotals[p]/max)*100):0)+'%';
+    fl.style.background='var('+P[p]+')';
+    tr.appendChild(fl);
+    var vl=document.createElement('div'); vl.className='srb-val'; vl.textContent=st.pillarTotals[p];
+    row.appendChild(nm); row.appendChild(tr); row.appendChild(vl); box.appendChild(row);
+  });
+}
+function srRenderRecall(){
+  var el=document.getElementById('sr-recall'); if(!el) return;
+  var lastWk=new Date(); lastWk.setDate(lastWk.getDate()-7);
+  var refs=srLoadReflections(); var prev=((refs&&refs.weekly)||{})[srWeekKey(lastWk)];
+  if(prev && prev.text){
+    el.textContent='';
+    var b=document.createElement('b'); b.textContent='Last week you chose to protect: ';
+    el.appendChild(b); el.appendChild(document.createTextNode('“'+prev.text+'” — did you?'));
+    el.style.display='';
+  } else { el.style.display='none'; }
+}
 function srRenderCarry(week){
   // Surface unique Top 3 strings seen across this week's days (today + history).
   var carry = []; var seen = {};
@@ -1064,6 +1103,10 @@ function renderSundayReview(){
   hdr.appendChild(b);
   // Stats grid (uses textContent inside, no innerHTML)
   srRenderStatGrid(week, st);
+  // Full 6-pillar balance (data was already computed in srStats; just surface it)
+  srRenderPillarBalance(st);
+  // Recall last week's "protect" intention so the reflection loop actually closes
+  srRenderRecall();
   // Narrative — assigning HTML is safe here because srNarrative() outputs hard-coded templates with only <b> tags; no user input touches it.
   document.getElementById('sr-narrative').innerHTML = srNarrative(week, st);
   // Carry forward
