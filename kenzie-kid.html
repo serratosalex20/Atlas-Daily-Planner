@@ -62,6 +62,8 @@
   .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
   .btn.full{width:100%}
   .btn.share{background:var(--coral);color:#2a1310;margin-top:4px}
+  .bk-row{display:flex;gap:9px;margin-top:4px}
+  .bk-row .btn{flex:1}
   .saverow{display:flex;gap:9px;justify-content:flex-end;margin-top:10px}
   .entries{margin-top:14px;display:grid;gap:9px}
   .entry{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 13px}
@@ -261,6 +263,17 @@
     <h2>📤 Share with Dad</h2>
     <p class="lead">Send Dad a peek at how your habits are going this week. It only sends your habit progress — <b>never your journal.</b></p>
     <button class="btn share full" id="share">📤 Send my progress to Dad</button>
+  </div>
+
+  <!-- Keep my Compass safe (backup / restore) -->
+  <div class="panel">
+    <h2>💾 Keep my Compass safe</h2>
+    <p class="lead">Your Compass lives only on this phone. Save a backup once in a while so you never lose your habits, streak, or journal. The backup file is <b>private to you</b> — keep it somewhere safe like your own iCloud or Files.</p>
+    <div class="bk-row">
+      <button class="btn ghost" id="bk-import">⬆️ Restore</button>
+      <button class="btn" id="bk-export">⬇️ Save backup</button>
+    </div>
+    <input type="file" id="bk-file" accept="application/json,.json" style="display:none">
   </div>
 
   <div class="footnote">Your compass. Check in, don't stress. 🌟</div>
@@ -703,6 +716,32 @@ function showAnimeQuote(){
   clearTimeout(window._qp); window._qp=setTimeout(function(){o.classList.remove('show');},7200);
 }
 
+/* ---- backup / restore: protect her local-only Compass from a lost phone ---- */
+function kkExport(){
+  try{
+    var data=localStorage.getItem(KEY)||JSON.stringify(S);
+    var blob=new Blob([data],{type:'application/json'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download='kenzie-compass-backup-'+dkey()+'.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},1500);
+    toast('Backup saved! Keep it somewhere safe 💛');
+  }catch(e){ toast('Couldn\'t save a backup on this device.'); }
+}
+function kkImport(file){
+  var rd=new FileReader();
+  rd.onload=function(){
+    var obj; try{obj=JSON.parse(rd.result);}catch(e){ toast('That file isn\'t a Compass backup.'); return; }
+    if(!obj||typeof obj!=='object'||(!('habits' in obj)&&!('journal' in obj))){ toast('That file isn\'t a Compass backup.'); return; }
+    if(!confirm('Restore this backup? It will replace what\'s on this phone right now.')) return;
+    try{ localStorage.setItem(KEY,JSON.stringify(obj)); toast('Restored! 🌟'); setTimeout(function(){location.reload();},700); }
+    catch(e){ toast('Couldn\'t restore on this device.'); }
+  };
+  rd.onerror=function(){ toast('Couldn\'t read that file.'); };
+  rd.readAsText(file);
+}
+
 /* ---- wires ---- */
 var jd=document.getElementById('jdate'); if(jd&&!jd.value) jd.value=dkey();
 document.getElementById('jsave').onclick=function(){
@@ -721,6 +760,10 @@ document.getElementById('afm-addbtn').onclick=function(){
   if(!v){ toast('Write your affirmation first 💛'); return; }
   S.customAffirm=S.customAffirm||[]; S.customAffirm.push(v); inp.value=''; save(); renderAffirm(); toast('Added your own! 🌟');
 };
+
+document.getElementById('bk-export').onclick=kkExport;
+document.getElementById('bk-import').onclick=function(){ document.getElementById('bk-file').click(); };
+document.getElementById('bk-file').onchange=function(){ if(this.files&&this.files[0]) kkImport(this.files[0]); this.value=''; };
 
 document.getElementById('levelup').onclick=function(){this.classList.remove('show');};
 document.getElementById('quotepop').onclick=function(){this.classList.remove('show');};
