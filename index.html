@@ -428,6 +428,36 @@
   .tl-item .pl.y{color:#7FB069}
   .tl-item .pl.n{color:#E0726A}
   .tl-item .x{background:none;border:0;color:var(--faint);font-size:15px;line-height:1;cursor:pointer;padding:0 2px}
+  /* Fuel & Body panel (Body pillar) */
+  .body-panel{background:linear-gradient(180deg,rgba(240,163,94,.06),var(--card));border-color:rgba(240,163,94,.22)}
+  .bd-macros{display:grid;gap:9px;margin-bottom:13px}
+  .bd-m{display:flex;align-items:center;gap:10px}
+  .bd-m .bd-lab{flex:none;width:60px;font-size:12px;font-weight:700;color:var(--muted)}
+  .bd-m .bd-track{flex:1;height:11px;background:var(--bg2);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .bd-m .bd-fill{height:100%;width:0;border-radius:999px;transition:width .5s cubic-bezier(.2,.9,.3,1)}
+  .bd-m .bd-num{flex:none;width:118px;text-align:right;font-size:11px;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}
+  .bd-m .bd-num b{color:var(--ink)}
+  .bd-m.over .bd-num b{color:var(--family)}
+  .bd-addrow{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:11px}
+  .bd-addrow input{flex:1;min-width:52px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:9px 8px;color:var(--ink);font:inherit;font-size:13px}
+  .bd-addrow input:focus{outline:none;border-color:var(--body)}
+  .bd-addrow button{flex:none;background:var(--body);color:#2a1708;border:0;border-radius:9px;padding:9px 15px;font:inherit;font-weight:800;font-size:13px;cursor:pointer}
+  .bd-addrow button:active{transform:scale(.97)}
+  .bd-meals{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;min-height:2px}
+  .bd-meal{display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:5px 5px 5px 11px;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .bd-meal button{background:none;border:0;color:var(--faint);font-size:14px;line-height:1;cursor:pointer;padding:0 3px}
+  .bd-weigh{border-top:1px dashed var(--line);padding-top:13px;margin-top:8px}
+  .bd-weigh-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:11px}
+  .bd-ws{background:var(--bg2);border:1px solid var(--line);border-radius:11px;padding:10px 8px;text-align:center}
+  .bd-ws .v{font-family:"Fraunces",serif;font-size:18px;font-weight:600;line-height:1.1;color:var(--ink)}
+  .bd-ws .l{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);font-weight:700;margin-top:3px}
+  .bd-ws .tr{font-size:10.5px;margin-top:3px;font-weight:800;font-variant-numeric:tabular-nums}
+  .bd-ws .tr.good{color:var(--money)}.bd-ws .tr.fast{color:var(--gold)}.bd-ws .tr.flat{color:var(--muted)}
+  .bd-targets-toggle{background:none;border:0;color:var(--faint);font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;margin-top:12px;text-decoration:underline;letter-spacing:.04em}
+  .bd-targets{margin-top:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+  .bd-targets label{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);font-weight:700;display:grid;gap:4px}
+  .bd-targets input{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:7px;color:var(--ink);font:inherit;font-size:13px}
+  .bd-targets input:focus{outline:none;border-color:var(--body)}
 </style>
 </head>
 <body>
@@ -518,6 +548,30 @@
     <h2 style="padding:0 2px">The Rhythm</h2>
     <p class="lead" style="padding:0 2px">Color = pillar. ⭐ = part of your Floor. The glowing block is where you are right now — just do that one.</p>
     <div id="timeline"></div>
+  </div>
+
+  <div class="panel body-panel" id="bodypanel">
+    <h2>🏋️ Fuel &amp; Body</h2>
+    <p class="lead">Today's macros and your cut metrics. Log as you go — judge the <b>weekly average</b>, not the daily number.</p>
+    <div class="bd-macros" id="bd-macros"></div>
+    <div class="bd-addrow">
+      <input type="number" id="bd-i-cal" inputmode="numeric" placeholder="cal">
+      <input type="number" id="bd-i-p" inputmode="numeric" placeholder="protein">
+      <input type="number" id="bd-i-c" inputmode="numeric" placeholder="carbs">
+      <input type="number" id="bd-i-f" inputmode="numeric" placeholder="fat">
+      <button id="bd-add" type="button">＋ Log</button>
+    </div>
+    <div class="bd-meals" id="bd-meals"></div>
+    <div class="bd-weigh">
+      <div class="bd-weigh-stats" id="bd-weigh-stats"></div>
+      <div class="bd-addrow">
+        <input type="number" id="bd-i-wt" inputmode="decimal" step="0.1" placeholder="weight (lb)">
+        <input type="number" id="bd-i-waist" inputmode="decimal" step="0.1" placeholder="waist (in)">
+        <button id="bd-logwt" type="button">Log weigh-in</button>
+      </div>
+    </div>
+    <button class="bd-targets-toggle" id="bd-targets-toggle" type="button">⚙ Edit targets</button>
+    <div class="bd-targets" id="bd-targets" style="display:none"></div>
   </div>
 
   <div class="panel brief-panel" id="briefpanel" style="display:none">
@@ -1503,6 +1557,37 @@ bc.trades = bc.trades || [];   // [{date,outcome:'W'|'L'|'B'|'N',r:Number|null,f
 if(bc.identity==null) bc.identity='';
 if(bc.strategy==null) bc.strategy='NOIC / “No-Wick” — entry checklist:\n• With the trend (bullish trend + bullish no-wick; bearish + bearish).\n• Limit AT the candle; wait for price to retrace and TAP it (≤10 candles).\n• No imbalance against you. Min 5-pip stop.\n• Stop off the wick +10% room. Fixed 1:1. A-setups only.\n• News: no new trades 1h before; flat 15m before.\n\n(Edit me — keep your live strategy here.)';
 bc.workout = bc.workout || {0:'Active recovery — walk + stretch',1:'Push — chest, shoulders, triceps',2:'Pull — back, biceps',3:'Legs — squat, hinge, calves, core',4:'Conditioning / cardio',5:'Full body or sport',6:'Rest / mobility'};
+bc.dayWorkout = bc.dayWorkout || {};   // { 'YYYY-MM-DD': 'specific session text' } — overrides the split for that day
+var RESTART_WORKOUT=
+"🔥 FULL-BODY RESTART · ~60–75 min · intensity 7/10\n\n"+
+"WARM-UP (10 min)\n"+
+"• Treadmill incline 10 / 3.0 mph · 5 min\n"+
+"• Arm circles ×20 · Squats ×15 · Hip openers ×10/side · Band pull-aparts ×20\n\n"+
+"BLOCK 1 — MAIN LIFTS\n"+
+"1. Incline DB Press — 3×8–10 (upper chest, controlled negative)\n"+
+"2. Lat Pulldown — 3×10 (stretch at top, elbows to pockets)\n"+
+"3. Goblet Squat — 3×10 (full depth, slow)\n"+
+"4. Romanian Deadlift — 3×10 (hamstring stretch, neutral spine)\n\n"+
+"BLOCK 2 — V-TAPER\n"+
+"5. Seated DB Shoulder Press — 3×10\n"+
+"6. Chest-Supported Row — 3×10 (squeeze shoulder blades)\n"+
+"7. Cable Lateral Raise — 3×15 (slow lowering)\n\n"+
+"BLOCK 3 — ARMS (superset, rest 60s)\n"+
+"8A. Rope Pushdowns — 3×12\n"+
+"8B. DB Curls — 3×12\n\n"+
+"BLOCK 4 — CORE\n"+
+"• Hanging Leg Raises — 3×12–15\n"+
+"• Cable Crunches — 3×15–20\n\n"+
+"FINISHER\n"+
+"• Incline walk 10 min · incline 10–12 / 3.0–3.5 · hands off rails\n\n"+
+"TODAY: leave 1–2 reps in the tank. Chase the pump, not failure.\n"+
+"Post-lift (1–2h): 40–60g protein + 40–60g carbs.";
+if(!bc._restartSeed){ bc.dayWorkout[dkey()] = RESTART_WORKOUT; bc._restartSeed = true; save(); }
+// Body pillar: macros + weigh-in (local). Targets default to Alex's 186 lb cut.
+state.body = state.body || {};
+state.body.targets = state.body.targets || {cal:2046,p:186,c:200,f:56};
+state.body.log = state.body.log || {};        // { 'YYYY-MM-DD': [ {cal,p,c,f}, ... ] }
+state.body.metrics = state.body.metrics || []; // [ {date, weight, waist} ]
 var MEDITATION_LIB=[
   {n:'Breath Awareness',h:'Sit tall. Follow the natural breath in and out. When the mind wanders, gently return to the breath. ~10 min.'},
   {n:'Box Breathing',h:'Inhale 4 · hold 4 · exhale 4 · hold 4. Repeat. Calms the nervous system and sharpens focus.'},
@@ -1594,12 +1679,88 @@ function buildTradeLog(){
   }
   return wrap;
 }
+/* ============ BODY PILLAR: macros + weigh-in ============ */
+function bdSumDay(dk){var arr=(state.body.log[dk]||[]),s={cal:0,p:0,c:0,f:0};arr.forEach(function(e){s.cal+=(+e.cal||0);s.p+=(+e.p||0);s.c+=(+e.c||0);s.f+=(+e.f||0);});return s;}
+function bd7avg(end){ // mean weight over the 7 days ending at 'end' (epoch-day index)
+  var sum=0,n=0;(state.body.metrics||[]).forEach(function(m){if(typeof m.weight==='number'){var t=Math.floor(new Date(m.date+'T00:00:00').getTime()/86400000);if(t<=end&&t>end-7){sum+=m.weight;n++;}}});return n?sum/n:null;
+}
+function renderBody(){
+  var host=document.getElementById('bd-macros'); if(!host) return;
+  var t=state.body.targets, s=bdSumDay(dkey()); host.textContent='';
+  [['Calories','cal','--gold',''],['Protein','p','--mind','g'],['Carbs','c','--body','g'],['Fat','f','--family','g']].forEach(function(row){
+    var key=row[1], have=Math.round(s[key]), goal=Math.round(+t[key]||0), pct=goal?Math.min(100,have/goal*100):0, over=goal>0&&have>goal, unit=row[3];
+    var m=document.createElement('div'); m.className='bd-m'+(over?' over':'');
+    var l=document.createElement('div'); l.className='bd-lab'; l.textContent=row[0]; m.appendChild(l);
+    var tr=document.createElement('div'); tr.className='bd-track'; var fl=document.createElement('div'); fl.className='bd-fill'; fl.style.width=pct+'%'; fl.style.background='var('+row[2]+')'; tr.appendChild(fl); m.appendChild(tr);
+    var num=document.createElement('div'); num.className='bd-num'; var bb=document.createElement('b'); bb.textContent=have+unit;
+    num.appendChild(bb); num.appendChild(document.createTextNode(' / '+goal+unit+(over?' · over':' · '+Math.max(0,goal-have)+unit+' left'))); m.appendChild(num);
+    host.appendChild(m);
+  });
+  var meals=document.getElementById('bd-meals'); meals.textContent='';
+  var arr=state.body.log[dkey()]||[];
+  arr.forEach(function(e,idx){
+    var chip=document.createElement('span'); chip.className='bd-meal';
+    chip.appendChild(document.createTextNode((Math.round(+e.cal||0))+' cal · '+(Math.round(+e.p||0))+'P'));
+    var x=document.createElement('button'); x.type='button'; x.textContent='×'; x.title='Remove';
+    x.onclick=function(){ arr.splice(idx,1); if(!arr.length) delete state.body.log[dkey()]; save(); renderBody(); };
+    chip.appendChild(x); meals.appendChild(chip);
+  });
+  var ws=document.getElementById('bd-weigh-stats'); ws.textContent='';
+  var metrics=(state.body.metrics||[]).slice().sort(function(a,b){return a.date<b.date?-1:(a.date>b.date?1:0);});
+  var latest=metrics.length?metrics[metrics.length-1]:null;
+  var today=Math.floor(Date.now()/86400000), avgNow=bd7avg(today), avgPrev=bd7avg(today-7);
+  function wsCell(v,l,trend,tcls){var c=document.createElement('div');c.className='bd-ws';var vv=document.createElement('div');vv.className='v';vv.textContent=v;var ll=document.createElement('div');ll.className='l';ll.textContent=l;c.appendChild(vv);c.appendChild(ll);if(trend){var tt=document.createElement('div');tt.className='tr '+(tcls||'flat');tt.textContent=trend;c.appendChild(tt);}return c;}
+  ws.appendChild(wsCell(latest&&typeof latest.weight==='number'?latest.weight.toFixed(1):'—','Latest lb'));
+  var trendTxt='',trendCls='flat';
+  if(avgNow!=null&&avgPrev!=null){var d=avgNow-avgPrev,ad=Math.abs(d);
+    if(d<0){ trendTxt='▼ '+ad.toFixed(1)+'/wk'; trendCls=(ad>=0.5&&ad<=1.5)?'good':(ad>1.5?'fast':'flat'); }
+    else if(d>0){ trendTxt='▲ '+ad.toFixed(1)+'/wk'; trendCls='fast'; }
+    else { trendTxt='flat'; trendCls='flat'; }
+  }
+  ws.appendChild(wsCell(avgNow!=null?avgNow.toFixed(1):'—','7-day avg',trendTxt,trendCls));
+  ws.appendChild(wsCell(latest&&typeof latest.waist==='number'?latest.waist.toFixed(1):'—','Waist in'));
+  var te=document.getElementById('bd-targets'); te.textContent='';
+  [['cal','Calories'],['p','Protein'],['c','Carbs'],['f','Fat']].forEach(function(row){
+    var lab=document.createElement('label'); lab.textContent=row[1];
+    var inp=document.createElement('input'); inp.type='number'; inp.value=state.body.targets[row[0]];
+    inp.onchange=function(){var v=parseFloat(inp.value);state.body.targets[row[0]]=isNaN(v)?0:v;save();renderBody();};
+    lab.appendChild(inp); te.appendChild(lab);
+  });
+}
+(function(){
+  var gv=function(id){var el=document.getElementById(id);if(!el)return 0;var v=parseFloat(el.value);return isNaN(v)?0:v;};
+  var add=document.getElementById('bd-add');
+  if(add) add.onclick=function(){
+    var cal=gv('bd-i-cal'),p=gv('bd-i-p'),c=gv('bd-i-c'),f=gv('bd-i-f');
+    if(!cal&&!p&&!c&&!f){toast('Enter at least one number.');return;}
+    var dk=dkey(); state.body.log[dk]=state.body.log[dk]||[]; state.body.log[dk].push({cal:cal,p:p,c:c,f:f}); save();
+    ['bd-i-cal','bd-i-p','bd-i-c','bd-i-f'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+    renderBody();
+  };
+  var lw=document.getElementById('bd-logwt');
+  if(lw) lw.onclick=function(){
+    var wt=parseFloat(document.getElementById('bd-i-wt').value), wa=parseFloat(document.getElementById('bd-i-waist').value);
+    if(isNaN(wt)&&isNaN(wa)){toast('Enter your weight (and waist).');return;}
+    state.body.metrics=state.body.metrics||[]; var dk=dkey(),ex=null;
+    state.body.metrics.forEach(function(m){if(m.date===dk)ex=m;});
+    if(ex){ if(!isNaN(wt))ex.weight=wt; if(!isNaN(wa))ex.waist=wa; } else { state.body.metrics.push({date:dk,weight:isNaN(wt)?null:wt,waist:isNaN(wa)?null:wa}); }
+    save(); document.getElementById('bd-i-wt').value=''; document.getElementById('bd-i-waist').value=''; renderBody(); toast('Logged. 7-day average updates.');
+  };
+  var tt=document.getElementById('bd-targets-toggle');
+  if(tt) tt.onclick=function(){var el=document.getElementById('bd-targets');el.style.display=(el.style.display==='none')?'grid':'none';};
+})();
+
 function buildDetail(i,b){
   var kind=blockDetailKind(b),w=document.createElement('div');w.className='block-detail';
   w.addEventListener('click',function(e){e.stopPropagation();});
   if(kind==='identity'){w.appendChild(bdHead('Your identity statement','read aloud'));w.appendChild(bdEdit(bc.identity,'Paste your “I am” statement here to read it…',function(v){bc.identity=v;save();}));}
   else if(kind==='meditation'){var m=activeMeditation();w.appendChild(bdHead('This month: '+m.n,'meditation'));w.appendChild(bdText(m.h));}
-  else if(kind==='workout'){var day=new Date().getDay();w.appendChild(bdHead("Today's workout",['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]));w.appendChild(bdEdit(bc.workout[day]||'','What are you training today?',function(v){bc.workout[day]=v;save();}));w.appendChild(bdHint('Editing updates this weekday in your split.'));}
+  else if(kind==='workout'){var day=new Date().getDay(),dwk=dkey();
+    w.appendChild(bdHead("Today's session",['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]));
+    w.appendChild(bdEdit(bc.dayWorkout[dwk]||'',"Today's specific workout… (leave blank to follow your weekly split)",function(v){if(v){bc.dayWorkout[dwk]=v;}else{delete bc.dayWorkout[dwk];}save();}));
+    w.appendChild(bdHead('Weekly split','template'));
+    w.appendChild(bdEdit(bc.workout[day]||'','What do you train this weekday?',function(v){bc.workout[day]=v;save();}));
+    w.appendChild(bdHint('Today’s session is just for today. The split is your recurring template.'));}
   else if(kind==='strategy'){w.appendChild(bdHead('Current strategy + checklist','markets'));w.appendChild(bdEdit(bc.strategy,'Your live strategy / NOIC checklist…',function(v){bc.strategy=v;save();}));w.appendChild(buildTradeLog());}
   else if(kind==='activities'){w.appendChild(bdHead('Activity ideas','this week'));var ul=document.createElement('ul');ul.className='bd-list';weekActivities(4).forEach(function(a){var li=document.createElement('li');li.textContent=a;ul.appendChild(li);});w.appendChild(ul);}
   else if(kind==='admin'){w.appendChild(bdHead("Today's sends",'admin'));w.appendChild(bdText('Coming soon: your follow-ups from the morning brief surface here. For now, jot them below.'));}
@@ -1957,7 +2118,7 @@ function renderAll(){
   document.querySelector('#modeseg button[data-mode="'+MODE+'"]').classList.add('on');
   var rb=document.querySelector('#ranges button[data-r="'+RANGE+'"]');if(rb)rb.classList.add('on');
   renderTimeline();renderMVD();renderTasks();wireTop3();renderLog();updateProgress();
-  renderKenzieTile();renderSundayReview();renderJournal();renderUpcoming();
+  renderKenzieTile();renderSundayReview();renderJournal();renderUpcoming();renderBody();
   if(typeof renderNotifs === 'function') renderNotifs();
   renderGame();
 }
