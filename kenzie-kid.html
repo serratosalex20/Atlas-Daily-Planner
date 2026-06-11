@@ -626,7 +626,7 @@ function confettiBurst(cx,cy){
     (function(el){setTimeout(function(){el.remove();},1000);})(p);
   }
 }
-function celebrateAt(el){if(!el){confettiBurst(innerWidth/2,innerHeight*0.4);return;}var r=el.getBoundingClientRect();confettiBurst(r.left+r.width/2,r.top+r.height/2);}
+function celebrateAt(el){/* always center-screen, not from the tapped element */confettiBurst(innerWidth/2,innerHeight*0.42);}
 function showLevelUp(L){
   var m=levelMeta(L);
   document.getElementById('lu-emoji').textContent=m.e;
