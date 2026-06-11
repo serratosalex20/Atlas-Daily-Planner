@@ -1611,7 +1611,8 @@ var FAMILY_CONTENT={
  adventure:{h:'Get out & make a memory',s:'adventure',pool:['Park or playground — let her lead','Pool or swim','Library, then a treat','Museum or science center','Bike ride somewhere new','Short hike or nature walk','Build or fix something together','Farmers market or a food adventure','Shoot hoops or play catch','Mini day-trip to a new spot']},
  play:{h:'Play together',s:'all the way in',pool:['Board game or card tournament','Movie night — her pick','Art or craft project','Bake or cook something together','Kitchen dance party','Co-op video game — she teaches you','Puzzle or a big build','Blanket fort']},
  meal:{h:'At the table',s:'connect',pool:['Rose & thorn — best and hardest part of the day','No phones at the table — all of you','Ask about a friend by name','Tell a real story from your day','Plan one fun thing for the weekend','Let her pick the music']},
- winddown:{h:'Wind down together',s:'before bed',pool:['Read a chapter together','Rose & thorn of her day','Three things you\'re each grateful for','5 minutes of slow stretching or breathing','Lay tomorrow out together — no rush','Phone-free tuck-in chat','One specific thing you\'re proud of her for']}
+ winddown:{h:'Wind down together',s:'before bed',pool:['Read a chapter together','Rose & thorn of her day','Three things you\'re each grateful for','5 minutes of slow stretching or breathing','Lay tomorrow out together — no rush','Phone-free tuck-in chat','One specific thing you\'re proud of her for']},
+ recharge:{h:'Refuel & reset',s:'midday',pool:['Real food + protein — actually sit down for it','10-min walk, no screen — reset the dopamine baseline','Step outside, sunlight on your face','Hydrate before more caffeine','If Kenzie\'s home: walk, pool, or bikes together','No doomscroll — let the mind idle a minute','Loosen up — stretch out the desk stiffness']}
 };
 function rotIdeas(pool,n){var d=new Date();var wk=Math.floor((d-new Date(d.getFullYear(),0,1))/604800000);var out=[],k=Math.min(n,pool.length);for(var i=0;i<k;i++)out.push(pool[(wk+i)%pool.length]);return out;}
 function blockDetailKind(b){var t=(b.t||'').toLowerCase();
@@ -1619,6 +1620,7 @@ function blockDetailKind(b){var t=(b.t||'').toLowerCase();
  if(t.indexOf('stillness')>=0)return 'meditation';
  if(t.indexOf('market')>=0)return 'strategy';
  if(t.indexOf('admin')>=0)return 'admin';
+ if(t.indexOf('fuel')>=0||t.indexOf('lunch')>=0)return 'recharge';   // refuel + light movement + reset — NOT the gym (catch 'Fuel & Move' before 'move')
  if(t.indexOf('train')>=0||t.indexOf('move')>=0)return 'workout';
  if(t.indexOf('power down')>=0||(t.indexOf('wind')>=0&&t.indexOf('sleep')>=0))return 'sleep';   // his night identity read
  if(t.indexOf('adventure')>=0)return 'adventure';
