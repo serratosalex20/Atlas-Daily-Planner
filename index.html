@@ -90,15 +90,43 @@
 
   /* Morning Brief — fed by atlas_morning_brief (written ~9 AM by the local ops pipeline), sun-gold accent */
   .brief-panel{background:linear-gradient(135deg,rgba(245,158,11,.10),var(--card) 60%);border-color:rgba(245,158,11,.28)}
-  .brief-top3{margin:0 0 10px;padding-left:22px;display:flex;flex-direction:column;gap:8px}
-  .brief-top3 li{font-size:13.5px;line-height:1.45;color:var(--ink)}
+  .brief-top3{margin:0 0 12px;display:flex;flex-direction:column;gap:9px}
+  .bf-t3{display:flex;gap:12px;align-items:flex-start;background:rgba(0,0,0,.16);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .bf-t3n{font-family:"Fraunces",serif;font-weight:700;font-size:19px;line-height:1;color:var(--gold);flex:none;width:22px;text-align:center;padding-top:1px}
+  .bf-t3b{font-size:14px;line-height:1.4;color:var(--ink)}
+  .bf-t3b b{color:#fff}
   .brief-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
   .brief-actions button{background:var(--bg2);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-size:12px;padding:7px 12px;cursor:pointer;transition:.15s}
   .brief-actions button:hover{border-color:rgba(245,158,11,.5)}
   .brief-full summary{font-size:12px;color:var(--muted);cursor:pointer;letter-spacing:.04em}
-  .brief-full>div{margin-top:10px;font-size:13px;line-height:1.55;color:var(--muted);background:var(--bg2);border-left:3px solid rgba(245,158,11,.45);border-radius:0 10px 10px 0;padding:12px 14px;max-height:420px;overflow:auto}
-  .brief-full h3{font-size:13px;color:var(--ink);margin:12px 0 6px}
-  .brief-full b{color:var(--ink)}
+  .brief-full>div{margin-top:12px;max-height:460px;overflow:auto;display:grid;gap:11px}
+  .bf-sec{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+  .bf-h{font-family:"Fraunces",serif;font-weight:600;font-size:14.5px;color:var(--ink);display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  .bf-dot{width:8px;height:8px;border-radius:50%;flex:none;box-shadow:0 0 10px currentColor}
+  .bf-dot-leads{background:var(--spirit);color:var(--spirit)}
+  .bf-dot-active{background:var(--money);color:var(--money)}
+  .bf-dot-backburner{background:var(--body);color:var(--body)}
+  .bf-dot-patterns{background:var(--mind);color:var(--mind)}
+  .bf-dot-generic{background:var(--gold);color:var(--gold)}
+  .bf-item{padding:9px 0;border-top:1px solid var(--line)}
+  .bf-item:first-of-type{border-top:0;padding-top:1px}
+  .bf-item-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px}
+  .bf-chip{font-weight:700;font-size:13.5px;color:var(--ink)}
+  .bf-item-b{font-size:12.5px;color:var(--muted);line-height:1.5}
+  .bf-item-b b{color:var(--ink)}
+  .bf-pill{font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 8px;border-radius:999px;white-space:nowrap;text-transform:uppercase}
+  .bf-pill.fresh{background:rgba(143,197,107,.16);color:var(--money);border:1px solid rgba(143,197,107,.35)}
+  .bf-pill.ok{background:rgba(82,183,172,.14);color:var(--mind);border:1px solid rgba(82,183,172,.32)}
+  .bf-pill.warn{background:rgba(240,163,94,.16);color:var(--body);border:1px solid rgba(240,163,94,.36)}
+  .bf-pill.stale{background:rgba(240,114,106,.16);color:var(--family);border:1px solid rgba(240,114,106,.4)}
+  .bf-pill.stage{background:rgba(167,139,250,.14);color:var(--spirit);border:1px solid rgba(167,139,250,.34);text-transform:none}
+  .bf-note{font-size:12.5px;color:var(--faint);font-style:italic;padding:3px 0}
+  .bf-pat{font-size:12.5px;color:var(--muted);line-height:1.5;padding:7px 0;border-top:1px solid var(--line)}
+  .bf-pat:first-of-type{border-top:0}
+  .bf-pat b{color:var(--ink)}
+  .bf-alert{background:rgba(240,114,106,.12);border:1px solid rgba(240,114,106,.45);border-radius:12px;padding:12px 14px}
+  .bf-alert-h{font-weight:800;color:var(--family);font-size:13.5px;margin-bottom:3px}
+  .bf-alert-b{font-size:12.5px;color:var(--ink)}
 
   /* Sunday Review — weekly reflection, Spirit-purple accent */
   .sunday-review{background:linear-gradient(180deg,rgba(167,139,250,.06),var(--card));border-color:rgba(167,139,250,.22)}
@@ -577,7 +605,7 @@
   <div class="panel brief-panel" id="briefpanel" style="display:none">
     <h2>🌅 Morning Brief</h2>
     <p class="lead">Generated at 9 AM from your projects, leads, and memory. Suggested big rocks — adopt them or ignore them.</p>
-    <ol class="brief-top3" id="brieftop3"></ol>
+    <div class="brief-top3" id="brieftop3"></div>
     <div class="brief-actions">
       <button type="button" id="briefadopt">Adopt as Today's Top 3</button>
       <details class="brief-full"><summary>Read the full brief</summary><div id="brieffull"></div></details>
@@ -2493,22 +2521,72 @@ boot();
      "Adopt" writes through the normal top3 input path so the app's own
      save/sync logic stays the source of truth. ---- */
   function briefInline(parent, text){
-    // Renders "a **b** c" as text + <b> children using textContent only.
-    String(text||'').split(/\*\*(.+?)\*\*/g).forEach(function(part, i){
+    // "a **b** c" -> text + <b> children, textContent only (XSS-safe). '->' -> arrow.
+    String(text||'').replace(/->/g,'→').split(/\*\*(.+?)\*\*/g).forEach(function(part, i){
       if(i % 2){ var b=document.createElement('b'); b.textContent=part; parent.appendChild(b); }
       else if(part){ parent.appendChild(document.createTextNode(part)); }
     });
   }
+  function bfEl(tag,cls,txt){ var e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; }
+  function bfDays(s){ var m=s.match(/\((?:last:\s*)?(\d+)\s*d/); if(m)return +m[1]; if(/last:\s*today|\btoday\b/i.test(s))return 0; return null; }
+  function bfStale(d){ if(d==null)return 'ok'; if(d<=2)return 'fresh'; if(d<=7)return 'ok'; if(d<=20)return 'warn'; return 'stale'; }
+  function bfClassify(t){ t=(t||'').toLowerCase(); if(t.indexOf('top 3')>=0)return 'top3'; if(t.indexOf('lead')>=0)return 'leads'; if(t.indexOf('active')>=0)return 'active'; if(t.indexOf('backburner')>=0)return 'backburner'; if(t.indexOf('pattern')>=0)return 'patterns'; return 'generic'; }
+  function bfItem(name, pill, rest){
+    var it=bfEl('div','bf-item'), h=bfEl('div','bf-item-h');
+    h.appendChild(bfEl('span','bf-chip',name)); if(pill) h.appendChild(pill); it.appendChild(h);
+    if(rest){ var b=bfEl('div','bf-item-b'); briefInline(b, rest); it.appendChild(b); }
+    return it;
+  }
+  function briefParse(md){
+    var alert=null, sections=[], cur=null;
+    String(md||'').split('\n').forEach(function(raw){
+      var line=raw.replace(/\s+$/,'');
+      if(/^#\s/.test(line)){
+        var h=line.replace(/^#\s*/,'').trim();
+        if(/SECURITY ALERT/i.test(h)||h.indexOf('!!!')===0){ alert=h.replace(/^!+\s*/,'').trim(); cur={slug:'alertbody',title:'',lines:[]}; sections.push(cur); }
+        else { cur=null; }
+        return;
+      }
+      if(/^##\s/.test(line)){ var t=line.replace(/^##\s*/,'').trim(); cur={slug:bfClassify(t),title:t,lines:[]}; sections.push(cur); return; }
+      if(line.trim()==='---'){ cur=null; return; }
+      if(cur) cur.lines.push(raw);
+    });
+    return {alert:alert, sections:sections};
+  }
   function briefRender(container, md){
     while(container.firstChild) container.removeChild(container.firstChild);
-    String(md||'').split('\n').forEach(function(line){
-      var el;
-      if(/^#+\s/.test(line)){ el=document.createElement('h3'); briefInline(el, line.replace(/^#+\s*/,'')); }
-      else if(/^---/.test(line)){ el=document.createElement('hr'); el.style.cssText='border:none;border-top:1px solid var(--line)'; }
-      else if(/^\s*-\s/.test(line)){ el=document.createElement('div'); el.appendChild(document.createTextNode('• ')); briefInline(el, line.replace(/^\s*-\s*/,'')); }
-      else if(!line.trim()){ el=document.createElement('div'); el.style.height='6px'; }
-      else { el=document.createElement('div'); briefInline(el, line); }
-      container.appendChild(el);
+    var parsed=briefParse(md);
+    parsed.sections.forEach(function(sec){
+      if(sec.slug==='top3') return;   // shown as hero cards above the fold
+      if(sec.slug==='alertbody'){
+        var a=bfEl('div','bf-alert');
+        a.appendChild(bfEl('div','bf-alert-h','🚨 '+(parsed.alert||'Security alert')));
+        var abody=sec.lines.map(function(x){return x.trim();}).filter(Boolean).join(' ');
+        if(abody){ var ab=bfEl('div','bf-alert-b'); briefInline(ab, abody); a.appendChild(ab); }
+        container.appendChild(a); return;
+      }
+      var card=bfEl('div','bf-sec');
+      var head=bfEl('div','bf-h'); head.appendChild(bfEl('span','bf-dot bf-dot-'+sec.slug)); head.appendChild(document.createTextNode(sec.title));
+      card.appendChild(head);
+      sec.lines.forEach(function(raw){
+        var l=raw.trim(); if(!l) return;
+        if(l.charAt(0)!=='-'){ var n=bfEl('div','bf-note'); briefInline(n, l); card.appendChild(n); return; }
+        var bodyt=l.replace(/^-\s*/,'');
+        if(sec.slug==='patterns'){ var p=bfEl('div','bf-pat'); briefInline(p, bodyt); card.appendChild(p); return; }
+        var nm=bodyt.match(/\*\*(.+?)\*\*/), name=nm?nm[1]:bodyt;
+        if(sec.slug==='leads'){
+          var st=bodyt.match(/\[(.+?)\]/), stage=st?st[1]:'';
+          var rest=bodyt.replace(/\*\*.+?\*\*/,'').replace(/\[.+?\]/,'').replace(/^[\s\-–—→]+/,'').trim();
+          card.appendChild(bfItem(name, stage?bfEl('span','bf-pill stage',stage):null, rest));
+        } else {
+          var d=bfDays(bodyt), parts=bodyt.split(/->|→/), nxt=parts.length>1?parts.slice(1).join('→').trim():'';
+          var pill=null;
+          if(d!=null) pill=bfEl('span','bf-pill '+bfStale(d), d===0?'today':d+'d');
+          else if(sec.slug==='active') pill=bfEl('span','bf-pill fresh','recent');
+          card.appendChild(bfItem(name, pill, nxt));
+        }
+      });
+      container.appendChild(card);
     });
   }
   async function briefPull(){
@@ -2518,8 +2596,11 @@ boot();
     var top3 = Array.isArray(res.data.top3) ? res.data.top3 : [];
     var ol = document.getElementById('brieftop3');
     while(ol.firstChild) ol.removeChild(ol.firstChild);
-    top3.forEach(function(t){
-      var li=document.createElement('li'); li.textContent=String(t); ol.appendChild(li);
+    top3.forEach(function(t,i){
+      var card=bfEl('div','bf-t3');
+      card.appendChild(bfEl('div','bf-t3n', String(i+1)));
+      var b=bfEl('div','bf-t3b'); briefInline(b, String(t)); card.appendChild(b);
+      ol.appendChild(card);
     });
     briefRender(document.getElementById('brieffull'), res.data.brief_md);
     document.getElementById('briefadopt').onclick = function(){
