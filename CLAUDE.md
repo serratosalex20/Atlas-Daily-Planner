@@ -11,3 +11,11 @@ Update authorized task changes and the shared handoff after meaningful work, and
 The existing Claude/local pipeline is the intended morning-brief owner, pending verification. Do not create a competing scheduler. A routine must actually be configured and have the required connectors enabled; this file alone does not schedule it.
 
 This repository is public. Keep personal plans, client information, credentials, database user IDs, and private task IDs out of commits, issues, and workflow logs. Report partial or blocked sync truthfully.
+
+## Approved next steps (2026-10-02)
+
+Read [docs/unattended-setup.md](docs/unattended-setup.md) and [docs/calendar-and-compass.md](docs/calendar-and-compass.md). The evening ChatGPT handoff now runs at **23:00 America/Chicago**.
+
+The user approved the recommended repair to include the verified opted-in account despite inactivity; stop presenting the old three-way gate decision as unanswered. Implement against the real local pipeline and validate before claiming completion. Verify Google Calendar as well as Todoist in the scheduled runtime. Capture confirmed work and remaining blockers in the private handoff after meaningful sessions.
+
+A cloud routine at 08:30 is the preferred future morning owner, but the existing local morning pipeline remains sole publisher until an explicit, tested ownership transfer. The cloud routine must remain a planning/review participant while local ownership is in force. Follow the parent Compass rules; do not copy private family notes into this public repo.

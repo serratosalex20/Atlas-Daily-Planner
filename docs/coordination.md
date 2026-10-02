@@ -93,3 +93,18 @@ If Atlas is unavailable, Todoist remains useful. Record **Todoist updated; Atlas
 - Weekly: review stale work, paused projects, and the coming week's commitments; make at most three weekly outcomes.
 - Prefer a short income-producing or client-delivery action over another system improvement when the system is already usable.
 - Research creates at most one proposed action when genuinely relevant; do not convert every finding into work.
+
+## Approved extension — 2026-10-02
+
+This extension supersedes earlier cadence or source limitations where they conflict:
+- Evening reconciliation: **23:00 America/Chicago**, using current work evidence, Todoist, Google Calendar, and the parent's Compass record.
+- Read [calendar-and-compass.md](calendar-and-compass.md) for calendar scope and family-record updates.
+- Read [unattended-setup.md](unattended-setup.md) for approved host-pipeline repairs, automatic session capture, and acceptance checks.
+- The private handoff is the current coordination record. Future structured activity storage is a design direction, not an existing implementation.
+- After meaningful work in a connected session, save confirmed changes, source references, blockers, and next steps. Do not assume access to every chat or rely on a final reply alone to persist state.
+- Google Calendar is authoritative for scheduled commitments. Separate fixed appointments, optional subscribed events, deadline reminders, and flexible routines. Do not count an imported event feed as confirmed attendance.
+- Rank confirmed deadlines/consequences, client delivery and near-term income, unblockers, then maintenance. Fit one main outcome plus up to two supporting actions into actual capacity; protect family, health, and rest.
+- On the weekly review, within an existing run, inspect stale work and select at most three weekly outcomes. Do not infer completion.
+- Independent review is bounded: proposal, critique, revision, and at most one additional review for a material unresolved issue. Stop when evidence supports the next step or the run budget is reached. Agreement is not evidence, and no assistant may invent the other's review.
+- A future model-to-model coordinator requires verified triggers, a return path, shared run IDs, deduplication, and an approved usage budget. It is not enabled by these instructions.
+- Report configuration saved, API write verified, unattended run verified, and UI verified as separate states.

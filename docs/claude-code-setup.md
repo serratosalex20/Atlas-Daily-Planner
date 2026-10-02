@@ -17,3 +17,9 @@ Pull the latest serratosalex20/Atlas-Daily-Planner changes without overwriting l
 9. Leave a private handoff with what actually works, exact remaining blockers, and the next step. Keep my daily list to one primary outcome and at most two supporting actions. Recommend a single bounded cleanup of old Todoist reminders, with no inferred completion.
 
 Finish with a concise status: verified now / blocked / one action needed from me. Do not describe instruction files alone as a completed live synchronization system.
+
+## Approved continuation — 2026-10-02
+
+The recommended durable inactivity-gate repair is now approved. Continue with [unattended-setup.md](unattended-setup.md); do not ask the user to choose among the prior gate alternatives again. Also integrate Google Calendar and the parent Compass protocol from [calendar-and-compass.md](calendar-and-compass.md).
+
+The ChatGPT evening run is **23:00 America/Chicago**. Read the private handoff for current verified project availability, account/calendar mapping, parent-record location and runtime blockers. Configure the existing routine where the actual installed version/account permits; otherwise provide one concrete setup step. Keep the existing publisher as owner until a tested transfer.
