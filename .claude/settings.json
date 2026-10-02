@@ -1,0 +1,6 @@
+{
+  "hooks": {
+    "SessionStart": [{"hooks": [{"type": "command", "command": "python \"$CLAUDE_PROJECT_DIR/scripts/coordination_outbox.py\" hook", "timeout": 5}]}],
+    "Stop": [{"hooks": [{"type": "command", "command": "python \"$CLAUDE_PROJECT_DIR/scripts/coordination_outbox.py\" hook", "timeout": 5}]}]
+  }
+}

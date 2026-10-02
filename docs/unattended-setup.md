@@ -15,6 +15,8 @@ This setup was approved on 2026-10-02. Generic instructions live here; actual id
 
 ## Automatic capture after work
 
+Implementation is now in `scripts/coordination_outbox.py` and project hooks. Follow [session-handoffs.md](session-handoffs.md) to verify those hooks on the actual host and deliver through the existing Todoist connector. Read [bounded-review.md](bounded-review.md) for the comment inbox, cloud reviewer and morning transfer. Do not create a second outbox or overwrite existing host hooks.
+
 In each connected assistant session, read current state at the start and save confirmed progress after meaningful work. Include source reference, project, changed fields, timestamp, task IDs and next action. A code commit is evidence of a change, not automatically proof of deployment or acceptance.
 
 For Claude Code, inspect existing hooks before adding a narrowly scoped completion/session-end hook. Preserve other hooks. Queue a compact update durably and retry failures; do not rely only on a slow network call at session termination. Prevent hook recursion and duplicate updates. Regular Claude/ChatGPT sessions require the appropriate instructions and authorized tools; flag coverage gaps instead of promising visibility into every conversation.

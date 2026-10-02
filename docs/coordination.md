@@ -108,3 +108,7 @@ This extension supersedes earlier cadence or source limitations where they confl
 - Independent review is bounded: proposal, critique, revision, and at most one additional review for a material unresolved issue. Stop when evidence supports the next step or the run budget is reached. Agreement is not evidence, and no assistant may invent the other's review.
 - A future model-to-model coordinator requires verified triggers, a return path, shared run IDs, deduplication, and an approved usage budget. It is not enabled by these instructions.
 - Report configuration saved, API write verified, unattended run verified, and UI verified as separate states.
+
+## Implemented transport extension
+
+The same private handoff task now uses comments as the work-event and review inbox; the description stays a compact current-state record. Follow [session-handoffs.md](session-handoffs.md) for durable local queueing and verified connector delivery, and [bounded-review.md](bounded-review.md) for actual cross-assistant replies. This is an extension of the existing Todoist record, not a new database or task ledger. Read both description and comments. Hook code and cloud watcher configuration have separate activation and runtime verification states; do not infer either from this file.

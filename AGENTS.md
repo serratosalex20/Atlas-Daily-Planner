@@ -21,3 +21,7 @@ The evening reconciliation is now **23:00 America/Chicago**. Check Google Calend
 The user approved repair of the existing morning pipeline's inactivity gate for the verified opted-in owner, runtime Todoist/calendar integration, and explicit credential configuration. These are setup work, not permission to alter unrelated systems. Local files outside this repository require the actual host runtime. Record implementation and scheduler configuration as pending until tested.
 
 Google Calendar writes follow the narrow rules in calendar-and-compass.md. Compass updates concern the parent's cloud records; do not access or export the child's device-private journal. ChatGPT/Codex is the current automated Compass journal writer; Claude reads and proposes changes through the handoff to avoid duplicate entries.
+
+## Session and review inbox
+
+Read [docs/session-handoffs.md](docs/session-handoffs.md) and [docs/bounded-review.md](docs/bounded-review.md). Read the private handoff's comments as well as its description. Save meaningful work events with stable source references; verify remote content before marking any local outbox event delivered. Read and respond to actual other-model review records within the round limit. Never invent consensus or treat an absent reply as approval. Only claim automatic host capture after the project's hooks have actually fired successfully.

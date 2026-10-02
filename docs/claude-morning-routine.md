@@ -6,6 +6,8 @@ Use the existing cloud routine at **08:30 America/Chicago** with this repository
 
 Read CLAUDE.md, docs/coordination.md and docs/calendar-and-compass.md. Read the private Atlas coordination handoff, current Todoist tasks, relevant project updates, and accessible Google Calendar events. ChatGPT's latest evening reconciliation is scheduled for 23:00 America/Chicago; check actual timestamps rather than assuming it ran.
 
+Read the handoff task comments and docs/bounded-review.md. Consume any valid pending ChatGPT proposal, check its evidence against current task/calendar state, and return an actual Claude critique or acceptance using the same review_id and the real reply_to comment ID. Respect expiry and the two-review limit. Save a verified work event under docs/session-handoffs.md when this run changes material state. Do not confuse a queued request with completed independent review.
+
 Review confirmed progress, tomorrow/today date boundaries, deadlines, calendar capacity, dependencies and overnight changes. Distinguish optional feeds, course deadline reminders and fixed commitments. Preserve family, health, sleep and human changes. Exclude onboarding clutter and do not infer completion from old due dates.
 
 Review ChatGPT's proposal, challenge unsupported assumptions, and select one main outcome plus at most two supporting actions. Include existing task references, first steps, estimates and definitions of done. Use a configured independent reviewer only within the approved bounded process; otherwise record that no live second-model review occurred.
